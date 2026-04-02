@@ -79,7 +79,13 @@ export default function Sidebar({ collapsed }: SidebarProps) {
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
 
   const toggleMenu = (label: string) => {
-    setOpenMenus((prev) => ({ ...prev, [label]: !prev[label] }));
+    setOpenMenus((prev) => {
+      const isCurrentlyOpen = !!prev[label];
+      // Close all menus, then toggle the clicked one (accordion behaviour)
+      const allClosed: Record<string, boolean> = {};
+      Object.keys(prev).forEach((k) => { allClosed[k] = false; });
+      return { ...allClosed, [label]: !isCurrentlyOpen };
+    });
   };
 
   const isChildActive = (item: NavItem) =>
@@ -291,6 +297,7 @@ export default function Sidebar({ collapsed }: SidebarProps) {
                         <NavLink
                           key={child.path}
                           to={child.path}
+                          end
                           className={({ isActive }) =>
                             `d-block py-2 px-3 text-decoration-none vision-child-item mb-1 ${isActive ? 'active' : ''}`
                           }
