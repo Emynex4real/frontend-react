@@ -1,0 +1,58 @@
+
+C:\Users\user\Desktop\frontend-react\src\context\AuthContext.tsx
+  49:17  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\user\Desktop\frontend-react\src\pages\branches\BranchesPage.tsx
+   21:50  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  247:39  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\user\Desktop\frontend-react\src\pages\departments\DepartmentFormPage.tsx
+  305:52  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  319:49  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\user\Desktop\frontend-react\src\pages\departments\DepartmentsPage.tsx
+   21:53  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  247:40  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\user\Desktop\frontend-react\src\pages\entries\EntriesPage.tsx
+   24:49  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  254:37  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\user\Desktop\frontend-react\src\pages\entries\EntryFormPage.tsx
+   18:64  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  442:46  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  484:29  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  484:37  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\user\Desktop\frontend-react\src\pages\reports\ReportFormPage.tsx
+  913:52  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  924:57  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\user\Desktop\frontend-react\src\pages\reports\ReportsPage.tsx
+   25:49  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  271:35  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\user\Desktop\frontend-react\src\pages\roles\RolesPage.tsx
+   18:47  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  233:34  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\user\Desktop\frontend-react\src\pages\users\UserFormPage.tsx
+  366:51  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  395:54  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  407:51  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\user\Desktop\frontend-react\src\pages\users\UsersPage.tsx
+   18:47  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  276:34  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\user\Desktop\frontend-react\src\services\api.ts
+  121:11  error  '_creds' is defined but never used  @typescript-eslint/no-unused-vars
+  139:12  error  '_id' is defined but never used     @typescript-eslint/no-unused-vars
+  159:12  error  '_id' is defined but never used     @typescript-eslint/no-unused-vars
+  179:12  error  '_id' is defined but never used     @typescript-eslint/no-unused-vars
+  200:12  error  '_id' is defined but never used     @typescript-eslint/no-unused-vars
+  222:12  error  '_id' is defined but never used     @typescript-eslint/no-unused-vars
+  242:12  error  '_id' is defined but never used     @typescript-eslint/no-unused-vars
+
+G£û 31 problems (31 errors, 0 warnings)
+

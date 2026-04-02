@@ -1,20 +1,20 @@
-import { useState } from 'react'
-import { NavLink, useLocation } from 'react-router-dom'
-import { useAuth } from '../../context/AuthContext'
+import { useState } from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 
 interface NavItem {
-  label: string
-  icon: string
-  path?: string
-  children?: { label: string; path: string }[]
-  permission?: string
+  label: string;
+  icon: string;
+  path?: string;
+  children?: { label: string; path: string }[];
+  permission?: string;
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: 'Dashboard', icon: 'bi-speedometer2', path: '/' },
+  { label: 'Dashboard', icon: 'bi-grid-1x2', path: '/' },
   {
     label: 'Branches',
-    icon: 'bi-building',
+    icon: 'bi-buildings',
     children: [
       { label: 'All Branches', path: '/branches' },
       { label: 'Add Branch', path: '/branches/new' },
@@ -67,160 +67,263 @@ const NAV_ITEMS: NavItem[] = [
       { label: 'Summary', path: '/entries/summary' },
     ],
   },
-]
+];
 
 interface SidebarProps {
-  collapsed: boolean
+  collapsed: boolean;
 }
 
 export default function Sidebar({ collapsed }: SidebarProps) {
-  const location = useLocation()
-  const { can } = useAuth()
-  const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({})
+  const location = useLocation();
+  const { can } = useAuth();
+  const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
 
   const toggleMenu = (label: string) => {
-    setOpenMenus(prev => ({ ...prev, [label]: !prev[label] }))
-  }
+    setOpenMenus((prev) => ({ ...prev, [label]: !prev[label] }));
+  };
 
   const isChildActive = (item: NavItem) =>
-    item.children?.some(c => location.pathname.startsWith(c.path)) ?? false
+    item.children?.some((c) => location.pathname.startsWith(c.path)) ?? false;
 
   const visibleItems = NAV_ITEMS.filter(
-    item => !item.permission || can(item.permission)
-  )
+    (item) => !item.permission || can(item.permission)
+  );
 
   return (
-    <aside
-      className="sidebar d-flex flex-column"
-      style={{
-        width: collapsed ? 72 : 260,
-        minHeight: '100vh',
-        background: '#1a1d23',
-        transition: 'width 0.25s ease',
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        zIndex: 1040,
-        overflowX: 'hidden',
-      }}
-    >
-      {/* Logo */}
-      <div
-        className="d-flex align-items-center px-3 py-3"
-        style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', minHeight: 64 }}
+    <>
+      <style>{`
+        .sidebar-vision-light {
+          background: rgba(255, 255, 255, 0.8);
+          backdrop-filter: blur(24px) saturate(150%);
+          -webkit-backdrop-filter: blur(24px) saturate(150%);
+          border-right: 1px solid rgba(0, 0, 0, 0.04);
+          font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", sans-serif;
+          box-shadow: 1px 0 24px rgba(0, 0, 0, 0.01);
+        }
+
+        /* Nav Item Styling */
+        .vision-nav-item {
+          color: #52525B; /* Zinc 600 */
+          border-radius: 12px;
+          margin: 2px 12px;
+          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+          font-weight: 500;
+          font-size: 14px;
+        }
+
+        .vision-nav-item:hover {
+          background: rgba(0, 0, 0, 0.03);
+          color: #09090B; /* Zinc 950 */
+        }
+
+        .vision-nav-item.active, .vision-nav-item.active-parent {
+          background: #FFFFFF;
+          color: #F97316; /* Clean vibrant orange */
+          font-weight: 600;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), 0 0 0 1px rgba(0, 0, 0, 0.02);
+        }
+
+        /* Tree Guide for Submenus */
+        .submenu-container {
+          position: relative;
+        }
+        .submenu-container::before {
+          content: '';
+          position: absolute;
+          left: 28px;
+          top: 0;
+          bottom: 12px;
+          width: 1px;
+          background: rgba(0, 0, 0, 0.06);
+          border-radius: 2px;
+        }
+
+        .vision-child-item {
+          color: #71717A;
+          font-size: 13px;
+          border-radius: 8px;
+          transition: all 0.2s ease;
+          position: relative;
+        }
+        
+        .vision-child-item:hover {
+          color: #09090B;
+          background: rgba(0, 0, 0, 0.02);
+        }
+
+        .vision-child-item.active {
+          color: #F97316;
+          font-weight: 600;
+          background: rgba(249, 115, 22, 0.06);
+        }
+
+        /* Minimal Scrollbar */
+        .sidebar-nav-scroll::-webkit-scrollbar {
+          width: 4px;
+        }
+        .sidebar-nav-scroll::-webkit-scrollbar-thumb {
+          background: rgba(0, 0, 0, 0.1);
+          border-radius: 10px;
+        }
+        
+        .brand-logo-box {
+          background: linear-gradient(135deg, #F97316 0%, #EA580C 100%);
+          box-shadow: 0 4px 12px rgba(249, 115, 22, 0.2), inset 0 1px 0 rgba(255,255,255,0.3);
+        }
+      `}</style>
+
+      <aside
+        className="sidebar-vision-light d-flex flex-column"
+        style={{
+          width: collapsed ? 80 : 280,
+          minHeight: '100vh',
+          transition: 'width 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          zIndex: 1040,
+          overflowX: 'hidden',
+        }}
       >
+        {/* Brand / Logo */}
         <div
-          style={{
-            width: 36,
-            height: 36,
-            borderRadius: 8,
-            background: '#f7941d',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-          }}
+          className="d-flex align-items-center px-4"
+          style={{ height: 72, borderBottom: '1px solid rgba(0,0,0,0.03)', flexShrink: 0 }}
         >
-          <i className="bi bi-layers-fill text-white" style={{ fontSize: 18 }} />
+          <div
+            className="brand-logo-box"
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 10,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >
+            <i className="bi bi-layers-half text-white" style={{ fontSize: 16 }} />
+          </div>
+          {!collapsed && (
+            <span
+              className="ms-3"
+              style={{
+                fontSize: 16,
+                fontWeight: 700,
+                letterSpacing: '-0.4px',
+                color: '#09090B',
+                whiteSpace: 'nowrap',
+                opacity: collapsed ? 0 : 1,
+                transition: 'opacity 0.2s ease',
+              }}
+            >
+              Digital World
+            </span>
+          )}
         </div>
-        {!collapsed && (
-          <span className="ms-2 fw-bold text-white" style={{ fontSize: 15, whiteSpace: 'nowrap' }}>
-            Digital World
-          </span>
-        )}
-      </div>
 
-      {/* Nav */}
-      <nav className="flex-grow-1 py-2" style={{ overflowY: 'auto', overflowX: 'hidden' }}>
-        {visibleItems.map(item => {
-          if (item.path) {
-            // Simple link
+        {/* Navigation Area */}
+        <nav
+          className="sidebar-nav-scroll flex-grow-1 py-4"
+          style={{ overflowY: 'auto', overflowX: 'hidden' }}
+        >
+          {visibleItems.map((item) => {
+            if (item.path) {
+              return (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  end
+                  className={({ isActive }) =>
+                    `d-flex align-items-center px-3 py-2 text-decoration-none vision-nav-item ${isActive ? 'active' : ''}`
+                  }
+                >
+                  <i className={`bi ${item.icon}`} style={{ fontSize: 18, flexShrink: 0, opacity: 0.9 }} />
+                  {!collapsed && (
+                    <span className="ms-3" style={{ whiteSpace: 'nowrap' }}>
+                      {item.label}
+                    </span>
+                  )}
+                </NavLink>
+              );
+            }
+
+            const isOpen = openMenus[item.label] ?? isChildActive(item);
+            const parentActive = isChildActive(item);
+
             return (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                end
-                className={({ isActive }) =>
-                  `d-flex align-items-center px-3 py-2 text-decoration-none nav-item-link ${isActive ? 'active' : ''}`
-                }
-                style={({ isActive }) => ({
-                  color: isActive ? '#f7941d' : 'rgba(255,255,255,0.7)',
-                  background: isActive ? 'rgba(247,148,29,0.12)' : 'transparent',
-                  borderRadius: 8,
-                  margin: '2px 8px',
-                  transition: 'all 0.15s',
-                })}
-              >
-                <i className={`bi ${item.icon}`} style={{ fontSize: 18, flexShrink: 0 }} />
-                {!collapsed && <span className="ms-2" style={{ fontSize: 14, whiteSpace: 'nowrap' }}>{item.label}</span>}
-              </NavLink>
-            )
-          }
+              <div key={item.label} className="mb-1">
+                <button
+                  className={`d-flex align-items-center w-100 px-3 py-2 border-0 text-start vision-nav-item ${parentActive ? 'active-parent' : ''}`}
+                  onClick={() => toggleMenu(item.label)}
+                  style={{ background: parentActive ? '#FFFFFF' : 'transparent', cursor: 'pointer' }}
+                >
+                  <i className={`bi ${item.icon}`} style={{ fontSize: 18, flexShrink: 0, opacity: 0.9 }} />
+                  {!collapsed && (
+                    <>
+                      <span className="ms-3 flex-grow-1" style={{ whiteSpace: 'nowrap' }}>
+                        {item.label}
+                      </span>
+                      <i
+                        className="bi bi-chevron-right"
+                        style={{
+                          fontSize: 10,
+                          color: '#A1A1AA',
+                          transition: 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+                          transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)',
+                        }}
+                      />
+                    </>
+                  )}
+                </button>
 
-          // Collapsible group
-          const isOpen = openMenus[item.label] ?? isChildActive(item)
-          return (
-            <div key={item.label}>
-              <button
-                className="d-flex align-items-center w-100 px-3 py-2 border-0 text-start"
-                onClick={() => toggleMenu(item.label)}
-                style={{
-                  background: 'transparent',
-                  color: isChildActive(item) ? '#f7941d' : 'rgba(255,255,255,0.7)',
-                  borderRadius: 8,
-                  margin: '2px 8px',
-                  width: 'calc(100% - 16px)',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s',
-                }}
-              >
-                <i className={`bi ${item.icon}`} style={{ fontSize: 18, flexShrink: 0 }} />
+                {/* Submenu */}
                 {!collapsed && (
-                  <>
-                    <span className="ms-2 flex-grow-1" style={{ fontSize: 14, whiteSpace: 'nowrap' }}>{item.label}</span>
-                    <i className={`bi bi-chevron-${isOpen ? 'up' : 'down'}`} style={{ fontSize: 11 }} />
-                  </>
+                  <div
+                    style={{
+                      maxHeight: isOpen ? '400px' : '0px',
+                      overflow: 'hidden',
+                      transition: 'max-height 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                    }}
+                  >
+                    <div className="submenu-container py-1 mt-1 mb-2" style={{ paddingLeft: 46, paddingRight: 12 }}>
+                      {item.children?.map((child) => (
+                        <NavLink
+                          key={child.path}
+                          to={child.path}
+                          className={({ isActive }) =>
+                            `d-block py-2 px-3 text-decoration-none vision-child-item mb-1 ${isActive ? 'active' : ''}`
+                          }
+                        >
+                          <span style={{ whiteSpace: 'nowrap' }}>{child.label}</span>
+                        </NavLink>
+                      ))}
+                    </div>
+                  </div>
                 )}
-              </button>
+              </div>
+            );
+          })}
+        </nav>
 
-              {!collapsed && isOpen && (
-                <div className="ps-4">
-                  {item.children?.map(child => (
-                    <NavLink
-                      key={child.path}
-                      to={child.path}
-                      className={({ isActive }) =>
-                        `d-flex align-items-center px-3 py-2 text-decoration-none ${isActive ? 'active' : ''}`
-                      }
-                      style={({ isActive }) => ({
-                        color: isActive ? '#f7941d' : 'rgba(255,255,255,0.55)',
-                        background: isActive ? 'rgba(247,148,29,0.1)' : 'transparent',
-                        borderRadius: 6,
-                        margin: '1px 8px',
-                        fontSize: 13,
-                        transition: 'all 0.15s',
-                      })}
-                    >
-                      <i className="bi bi-dot" style={{ fontSize: 18 }} />
-                      <span style={{ whiteSpace: 'nowrap' }}>{child.label}</span>
-                    </NavLink>
-                  ))}
-                </div>
-              )}
-            </div>
-          )
-        })}
-      </nav>
-
-      {/* Footer */}
-      {!collapsed && (
-        <div
-          className="px-3 py-3 text-center"
-          style={{ borderTop: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.3)', fontSize: 11 }}
-        >
-          Digital World Admin v1.0
-        </div>
-      )}
-    </aside>
-  )
+        {/* Footer */}
+        {!collapsed && (
+          <div
+            className="px-4 py-4"
+            style={{
+              borderTop: '1px solid rgba(0,0,0,0.03)',
+              color: '#A1A1AA',
+              fontSize: 12,
+              fontWeight: 500,
+              display: 'flex',
+              justifyContent: 'space-between',
+            }}
+          >
+            <span>Platform</span>
+            <span>v2.0</span>
+          </div>
+        )}
+      </aside>
+    </>
+  );
 }
