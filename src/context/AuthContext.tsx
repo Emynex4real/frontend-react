@@ -8,6 +8,9 @@ interface AuthContextValue {
   login: (username: string, password: string) => Promise<void>
   logout: () => Promise<void>
   can: (permission: string) => boolean
+  isAdmin: () => boolean
+  isManager: () => boolean
+  isStaff: () => boolean
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -39,8 +42,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const can = (permission: string) => user?.permissions.includes(permission) ?? false
 
+  // Super Admin: has full management permissions
+  const isAdmin = () =>
+    ['manage_users', 'manage_reports', 'manage_branches', 'manage_departments', 'manage_roles']
+      .some(p => can(p))
+
+  // Branch Manager: has approve_reports + manage_branch_reports but is NOT a super admin
+  const isManager = () =>
+    !isAdmin() && (can('approve_reports') || can('manage_branch_reports'))
+
+  // Staff / Asst Manager / Branch Admin: submitters only
+  const isStaff = () => !isAdmin() && !isManager()
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, can }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, can, isAdmin, isManager, isStaff }}>
       {children}
     </AuthContext.Provider>
   )

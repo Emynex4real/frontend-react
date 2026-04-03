@@ -10,7 +10,7 @@ interface NavItem {
   permission?: string;
 }
 
-const NAV_ITEMS: NavItem[] = [
+const ADMIN_NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard', icon: 'bi-grid-1x2', path: '/' },
   {
     label: 'Branches',
@@ -64,7 +64,64 @@ const NAV_ITEMS: NavItem[] = [
     children: [
       { label: 'Submit Report', path: '/entries/new' },
       { label: 'My Submissions', path: '/entries' },
-      { label: 'Summary', path: '/entries/summary' },
+    ],
+  },
+  {
+    label: 'Report Review',
+    icon: 'bi-clipboard2-check',
+    children: [
+      { label: 'All Submissions', path: '/submissions' },
+      { label: 'Pending Review', path: '/submissions?status=pending' },
+    ],
+    permission: 'approve_reports',
+  },
+];
+
+// ── Branch Manager sidebar ── middle ground between admin and staff ────────
+const MANAGER_NAV_ITEMS: NavItem[] = [
+  { label: 'Dashboard', icon: 'bi-grid-1x2', path: '/manager' },
+  {
+    label: 'Branch Templates',
+    icon: 'bi-file-earmark-text',
+    children: [
+      { label: 'My Templates',     path: '/manager/templates' },
+      { label: 'Create Template',  path: '/manager/templates/new' },
+    ],
+  },
+  {
+    label: 'Branch Submissions',
+    icon: 'bi-clipboard2-check',
+    children: [
+      { label: 'All Submissions',  path: '/manager/submissions' },
+      { label: 'Pending Review',   path: '/manager/submissions?status=pending' },
+    ],
+  },
+  {
+    label: 'Branch Team',
+    icon: 'bi-people',
+    children: [
+      { label: 'Team Members',     path: '/manager/team' },
+    ],
+  },
+  {
+    label: 'My Reports',
+    icon: 'bi-journal-check',
+    children: [
+      { label: 'Assigned to Me',   path: '/my-reports' },
+      { label: 'My Submissions',   path: '/my-submissions' },
+    ],
+  },
+];
+
+// ── Clean staff-only sidebar ──────────────────────────────────────────────
+const STAFF_NAV_ITEMS: NavItem[] = [
+  { label: 'Dashboard', icon: 'bi-grid-1x2', path: '/staff' },
+  {
+    label: 'My Reports',
+    icon: 'bi-journal-check',
+    children: [
+      { label: 'Assigned Reports', path: '/my-reports' },
+      { label: 'My Submissions',   path: '/my-submissions' },
     ],
   },
 ];
@@ -75,13 +132,12 @@ interface SidebarProps {
 
 export default function Sidebar({ collapsed }: SidebarProps) {
   const location = useLocation();
-  const { can } = useAuth();
+  const { can, isAdmin, isManager } = useAuth();
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
 
   const toggleMenu = (label: string) => {
     setOpenMenus((prev) => {
       const isCurrentlyOpen = !!prev[label];
-      // Close all menus, then toggle the clicked one (accordion behaviour)
       const allClosed: Record<string, boolean> = {};
       Object.keys(prev).forEach((k) => { allClosed[k] = false; });
       return { ...allClosed, [label]: !isCurrentlyOpen };
@@ -89,11 +145,18 @@ export default function Sidebar({ collapsed }: SidebarProps) {
   };
 
   const isChildActive = (item: NavItem) =>
-    item.children?.some((c) => location.pathname.startsWith(c.path)) ?? false;
+    item.children?.some((c) => location.pathname.startsWith(c.path.split('?')[0])) ?? false;
 
-  const visibleItems = NAV_ITEMS.filter(
-    (item) => !item.permission || can(item.permission)
+  // Pick correct nav tree based on role
+  const rawItems = isAdmin() ? ADMIN_NAV_ITEMS : isManager() ? MANAGER_NAV_ITEMS : STAFF_NAV_ITEMS;
+  const visibleItems = rawItems.filter(
+    (item: NavItem) => !item.permission || can(item.permission)
   );
+
+  // Role badge for sidebar header
+  const roleBadge = isAdmin() ? null : isManager()
+    ? { label: 'Branch Manager', color: '#0EA5E9' }
+    : null;
 
   return (
     <>
@@ -107,9 +170,8 @@ export default function Sidebar({ collapsed }: SidebarProps) {
           box-shadow: 1px 0 24px rgba(0, 0, 0, 0.01);
         }
 
-        /* Nav Item Styling */
         .vision-nav-item {
-          color: #52525B; /* Zinc 600 */
+          color: #52525B;
           border-radius: 12px;
           margin: 2px 12px;
           transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
@@ -119,17 +181,16 @@ export default function Sidebar({ collapsed }: SidebarProps) {
 
         .vision-nav-item:hover {
           background: rgba(0, 0, 0, 0.03);
-          color: #09090B; /* Zinc 950 */
+          color: #09090B;
         }
 
         .vision-nav-item.active, .vision-nav-item.active-parent {
           background: #FFFFFF;
-          color: #F97316; /* Clean vibrant orange */
+          color: #F97316;
           font-weight: 600;
           box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), 0 0 0 1px rgba(0, 0, 0, 0.02);
         }
 
-        /* Tree Guide for Submenus */
         .submenu-container {
           position: relative;
         }
@@ -163,10 +224,7 @@ export default function Sidebar({ collapsed }: SidebarProps) {
           background: rgba(249, 115, 22, 0.06);
         }
 
-        /* Minimal Scrollbar */
-        .sidebar-nav-scroll::-webkit-scrollbar {
-          width: 4px;
-        }
+        .sidebar-nav-scroll::-webkit-scrollbar { width: 4px; }
         .sidebar-nav-scroll::-webkit-scrollbar-thumb {
           background: rgba(0, 0, 0, 0.1);
           border-radius: 10px;
@@ -175,6 +233,27 @@ export default function Sidebar({ collapsed }: SidebarProps) {
         .brand-logo-box {
           background: linear-gradient(135deg, #F97316 0%, #EA580C 100%);
           box-shadow: 0 4px 12px rgba(249, 115, 22, 0.2), inset 0 1px 0 rgba(255,255,255,0.3);
+        }
+
+        .manager-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          padding: 2px 8px;
+          border-radius: 20px;
+          font-size: 10px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+        }
+
+        .nav-section-label {
+          font-size: 10px;
+          font-weight: 700;
+          color: #A1A1AA;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+          padding: 8px 24px 4px;
         }
       `}</style>
 
@@ -199,32 +278,27 @@ export default function Sidebar({ collapsed }: SidebarProps) {
           <div
             className="brand-logo-box"
             style={{
-              width: 36,
-              height: 36,
-              borderRadius: 10,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
+              width: 36, height: 36, borderRadius: 10,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
             }}
           >
             <i className="bi bi-layers-half text-white" style={{ fontSize: 16 }} />
           </div>
           {!collapsed && (
-            <span
-              className="ms-3"
-              style={{
-                fontSize: 16,
-                fontWeight: 700,
-                letterSpacing: '-0.4px',
-                color: '#09090B',
-                whiteSpace: 'nowrap',
-                opacity: collapsed ? 0 : 1,
-                transition: 'opacity 0.2s ease',
-              }}
-            >
-              Digital World
-            </span>
+            <div className="ms-3" style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: '-0.4px', color: '#09090B', whiteSpace: 'nowrap' }}>
+                Digital World
+              </div>
+              {roleBadge && (
+                <div
+                  className="manager-badge"
+                  style={{ background: `${roleBadge.color}15`, color: roleBadge.color, marginTop: 2 }}
+                >
+                  <i className="bi bi-person-badge-fill" style={{ fontSize: 9 }} />
+                  {roleBadge.label}
+                </div>
+              )}
+            </div>
           )}
         </div>
 

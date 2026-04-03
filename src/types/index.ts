@@ -22,6 +22,9 @@ export interface AuthUser {
   role_id: number
   role_name: string
   branch_id?: number
+  branch_name?: string
+  department_id?: number
+  department_name?: string
   permissions: string[]
 }
 
@@ -145,10 +148,16 @@ export interface ReportEntry {
   report_title?: string
   submitted_by: number
   submitter_name?: string
+  submitter_role?: string
+  manager_name?: string
   branch_id: number
   branch_name?: string
+  department_name?: string
+  week_label?: string        // e.g. "Week of Mar 24 – Mar 30"
+  week_start?: string        // ISO date string
   data: Record<string, unknown>
   status: 'pending' | 'approved' | 'rejected'
+  rejection_comment?: string
   created_at: string
   updated_at: string
 }
@@ -156,6 +165,21 @@ export interface ReportEntry {
 export interface ReportEntryForm {
   report_id: number
   data: Record<string, unknown>
+}
+
+// Submission Review
+export interface SubmissionReviewAction {
+  status: 'approved' | 'rejected'
+  rejection_comment?: string
+}
+
+export interface SubmissionFilter {
+  branch_id?: number
+  staff_id?: number
+  manager_name?: string
+  week_start?: string
+  status?: string
+  search?: string
 }
 
 // Dashboard stats
