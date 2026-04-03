@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
@@ -77,43 +77,41 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
   },
 ];
 
-// ── Branch Manager sidebar ── middle ground between admin and staff ────────
 const MANAGER_NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard', icon: 'bi-grid-1x2', path: '/manager' },
   {
     label: 'Branch Templates',
     icon: 'bi-file-earmark-text',
     children: [
-      { label: 'My Templates',     path: '/manager/templates' },
-      { label: 'Create Template',  path: '/manager/templates/new' },
+      { label: 'My Templates',    path: '/manager/templates' },
+      { label: 'Create Template', path: '/manager/templates/new' },
     ],
   },
   {
     label: 'Branch Submissions',
     icon: 'bi-clipboard2-check',
     children: [
-      { label: 'All Submissions',  path: '/manager/submissions' },
-      { label: 'Pending Review',   path: '/manager/submissions?status=pending' },
+      { label: 'All Submissions', path: '/manager/submissions' },
+      { label: 'Pending Review',  path: '/manager/submissions?status=pending' },
     ],
   },
   {
     label: 'Branch Team',
     icon: 'bi-people',
     children: [
-      { label: 'Team Members',     path: '/manager/team' },
+      { label: 'Team Members', path: '/manager/team' },
     ],
   },
   {
     label: 'My Reports',
     icon: 'bi-journal-check',
     children: [
-      { label: 'Assigned to Me',   path: '/my-reports' },
-      { label: 'My Submissions',   path: '/my-submissions' },
+      { label: 'Assigned to Me',  path: '/my-reports' },
+      { label: 'My Submissions',  path: '/my-submissions' },
     ],
   },
 ];
 
-// ── Clean staff-only sidebar ──────────────────────────────────────────────
 const STAFF_NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard', icon: 'bi-grid-1x2', path: '/staff' },
   {
@@ -128,12 +126,21 @@ const STAFF_NAV_ITEMS: NavItem[] = [
 
 interface SidebarProps {
   collapsed: boolean;
+  mobileOpen: boolean;
+  isMobile: boolean;
+  onClose: () => void;
 }
 
-export default function Sidebar({ collapsed }: SidebarProps) {
+export default function Sidebar({ collapsed, mobileOpen, isMobile, onClose }: SidebarProps) {
   const location = useLocation();
   const { can, isAdmin, isManager } = useAuth();
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
+
+  // Close mobile drawer on route change
+  useEffect(() => {
+    if (isMobile) onClose();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
 
   const toggleMenu = (label: string) => {
     setOpenMenus((prev) => {
@@ -147,27 +154,31 @@ export default function Sidebar({ collapsed }: SidebarProps) {
   const isChildActive = (item: NavItem) =>
     item.children?.some((c) => location.pathname.startsWith(c.path.split('?')[0])) ?? false;
 
-  // Pick correct nav tree based on role
   const rawItems = isAdmin() ? ADMIN_NAV_ITEMS : isManager() ? MANAGER_NAV_ITEMS : STAFF_NAV_ITEMS;
   const visibleItems = rawItems.filter(
     (item: NavItem) => !item.permission || can(item.permission)
   );
 
-  // Role badge for sidebar header
   const roleBadge = isAdmin() ? null : isManager()
     ? { label: 'Branch Manager', color: '#0EA5E9' }
     : null;
+
+  // Desktop: width based on collapsed; Mobile: always full-width (280px) drawer
+  const sidebarWidth = isMobile ? 280 : collapsed ? 80 : 280;
+
+  // Mobile: translate off-screen when closed
+  const translateX = isMobile && !mobileOpen ? '-100%' : '0%';
 
   return (
     <>
       <style>{`
         .sidebar-vision-light {
-          background: rgba(255, 255, 255, 0.8);
+          background: rgba(255, 255, 255, 0.95);
           backdrop-filter: blur(24px) saturate(150%);
           -webkit-backdrop-filter: blur(24px) saturate(150%);
           border-right: 1px solid rgba(0, 0, 0, 0.04);
           font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", sans-serif;
-          box-shadow: 1px 0 24px rgba(0, 0, 0, 0.01);
+          box-shadow: 1px 0 24px rgba(0, 0, 0, 0.06);
         }
 
         .vision-nav-item {
@@ -255,25 +266,45 @@ export default function Sidebar({ collapsed }: SidebarProps) {
           letter-spacing: 0.08em;
           padding: 8px 24px 4px;
         }
+
+        .sidebar-close-btn {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 32px;
+          height: 32px;
+          border: none;
+          background: rgba(0,0,0,0.04);
+          border-radius: 8px;
+          color: #71717A;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          flex-shrink: 0;
+        }
+        .sidebar-close-btn:hover {
+          background: rgba(0,0,0,0.08);
+          color: #09090B;
+        }
       `}</style>
 
       <aside
         className="sidebar-vision-light d-flex flex-column"
         style={{
-          width: collapsed ? 80 : 280,
+          width: sidebarWidth,
           minHeight: '100vh',
-          transition: 'width 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+          transition: 'width 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
           position: 'fixed',
           top: 0,
           left: 0,
           zIndex: 1040,
           overflowX: 'hidden',
+          transform: `translateX(${translateX})`,
         }}
       >
         {/* Brand / Logo */}
         <div
-          className="d-flex align-items-center px-4"
-          style={{ height: 72, borderBottom: '1px solid rgba(0,0,0,0.03)', flexShrink: 0 }}
+          className="d-flex align-items-center px-3"
+          style={{ height: 64, borderBottom: '1px solid rgba(0,0,0,0.03)', flexShrink: 0, gap: 12 }}
         >
           <div
             className="brand-logo-box"
@@ -284,8 +315,10 @@ export default function Sidebar({ collapsed }: SidebarProps) {
           >
             <i className="bi bi-layers-half text-white" style={{ fontSize: 16 }} />
           </div>
-          {!collapsed && (
-            <div className="ms-3" style={{ minWidth: 0 }}>
+
+          {/* Show title when not collapsed (desktop) or on mobile when open */}
+          {(isMobile || !collapsed) && (
+            <div style={{ minWidth: 0, flex: 1 }}>
               <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: '-0.4px', color: '#09090B', whiteSpace: 'nowrap' }}>
                 Digital World
               </div>
@@ -300,11 +333,18 @@ export default function Sidebar({ collapsed }: SidebarProps) {
               )}
             </div>
           )}
+
+          {/* Mobile close button */}
+          {isMobile && (
+            <button className="sidebar-close-btn ms-auto" onClick={onClose} title="Close menu">
+              <i className="bi bi-x-lg" style={{ fontSize: 15 }} />
+            </button>
+          )}
         </div>
 
         {/* Navigation Area */}
         <nav
-          className="sidebar-nav-scroll flex-grow-1 py-4"
+          className="sidebar-nav-scroll flex-grow-1 py-3"
           style={{ overflowY: 'auto', overflowX: 'hidden' }}
         >
           {visibleItems.map((item) => {
@@ -319,7 +359,7 @@ export default function Sidebar({ collapsed }: SidebarProps) {
                   }
                 >
                   <i className={`bi ${item.icon}`} style={{ fontSize: 18, flexShrink: 0, opacity: 0.9 }} />
-                  {!collapsed && (
+                  {(isMobile || !collapsed) && (
                     <span className="ms-3" style={{ whiteSpace: 'nowrap' }}>
                       {item.label}
                     </span>
@@ -339,7 +379,7 @@ export default function Sidebar({ collapsed }: SidebarProps) {
                   style={{ background: parentActive ? '#FFFFFF' : 'transparent', cursor: 'pointer' }}
                 >
                   <i className={`bi ${item.icon}`} style={{ fontSize: 18, flexShrink: 0, opacity: 0.9 }} />
-                  {!collapsed && (
+                  {(isMobile || !collapsed) && (
                     <>
                       <span className="ms-3 flex-grow-1" style={{ whiteSpace: 'nowrap' }}>
                         {item.label}
@@ -358,7 +398,7 @@ export default function Sidebar({ collapsed }: SidebarProps) {
                 </button>
 
                 {/* Submenu */}
-                {!collapsed && (
+                {(isMobile || !collapsed) && (
                   <div
                     style={{
                       maxHeight: isOpen ? '400px' : '0px',
@@ -388,9 +428,9 @@ export default function Sidebar({ collapsed }: SidebarProps) {
         </nav>
 
         {/* Footer */}
-        {!collapsed && (
+        {(isMobile || !collapsed) && (
           <div
-            className="px-4 py-4"
+            className="px-4 py-3"
             style={{
               borderTop: '1px solid rgba(0,0,0,0.03)',
               color: '#A1A1AA',

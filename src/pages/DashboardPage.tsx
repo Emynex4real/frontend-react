@@ -145,6 +145,19 @@ export default function DashboardPage() {
         .entry-row:hover {
           background: #F8FAFC;
         }
+        @media (max-width: 640px) {
+          .entry-row {
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            border: 1px solid #F1F5F9;
+            border-radius: 16px;
+            padding: 14px;
+            margin-bottom: 10px;
+            background: #FAFCFF;
+          }
+          .entry-row:hover { background: #F1F5F9; }
+          .entry-row-hdr { display: none !important; }
+        }
 
         .status-pill {
           padding: 6px 12px;
@@ -174,14 +187,14 @@ export default function DashboardPage() {
       </svg>
 
       {/* Header */}
-      <div className="d-flex justify-content-between align-items-end mb-5">
+      <div className="d-flex flex-wrap justify-content-between align-items-end mb-4" style={{ gap: 12 }}>
         <div>
           <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-1px', margin: 0, color: '#0F172A' }}>Overview</h1>
           <p style={{ color: '#64748B', margin: '4px 0 0 0', fontSize: 15 }}>
             Welcome back, <span style={{ color: '#0F172A', fontWeight: 600 }}>{user?.full_name}</span>
           </p>
         </div>
-        <div style={{ background: '#F1F5F9', padding: '8px 16px', borderRadius: 100, fontSize: 13, border: '1px solid #E2E8F0', color: '#475569', fontWeight: 500 }}>
+        <div style={{ background: '#F1F5F9', padding: '8px 16px', borderRadius: 100, fontSize: 13, border: '1px solid #E2E8F0', color: '#475569', fontWeight: 500, whiteSpace: 'nowrap' }}>
           {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
         </div>
       </div>
@@ -311,8 +324,8 @@ export default function DashboardPage() {
           </div>
 
           <div className="d-flex flex-column">
-            {/* Table Header */}
-            <div className="entry-row" style={{ padding: '0 16px 12px 16px', borderBottom: '1px solid #F1F5F9', borderRadius: 0 }}>
+            {/* Table Header — hidden on mobile via entry-row-hdr */}
+            <div className="entry-row entry-row-hdr" style={{ padding: '0 16px 12px 16px', borderBottom: '1px solid #F1F5F9', borderRadius: 0 }}>
               <div style={{ fontSize: 12, color: '#94A3B8', fontWeight: 600 }}>REPORT</div>
               <div style={{ fontSize: 12, color: '#94A3B8', fontWeight: 600 }}>BRANCH</div>
               <div style={{ fontSize: 12, color: '#94A3B8', fontWeight: 600 }}>AUTHOR</div>

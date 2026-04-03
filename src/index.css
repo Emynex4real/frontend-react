@@ -364,3 +364,92 @@ textarea,
   justify-content: center;
   font-size: 22px;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   GLOBAL MOBILE RESPONSIVE UTILITIES
+   ═══════════════════════════════════════════════════════════ */
+
+/* Prevent horizontal overflow on all pages */
+main {
+  width: 100%;
+  overflow-x: hidden;
+}
+
+/* Page header — stack on mobile */
+@media (max-width: 640px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .page-header .btn,
+  .page-header a {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+/* Cards get smaller padding on mobile */
+@media (max-width: 640px) {
+  .card-modern {
+    border-radius: 10px;
+    padding: 4px;
+  }
+  .card-modern .card-body {
+    padding: 16px !important;
+  }
+
+  /* Stat cards shrink */
+  .stat-card {
+    padding: 14px;
+  }
+
+  /* Form builder stacks cleanly */
+  .builder-layout {
+    grid-template-columns: 1fr !important;
+  }
+
+  .bento-item {
+    border-radius: 16px !important;
+    padding: 16px !important;
+  }
+}
+
+/* Tables: horizontal scroll on mobile instead of breaking layout */
+@media (max-width: 768px) {
+  .table-responsive-mobile {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 10px;
+  }
+
+  /* Bootstrap tables in cards */
+  .card-modern .table-responsive {
+    border-radius: 0 0 10px 10px;
+  }
+}
+
+/* Modals: full screen on mobile */
+@media (max-width: 576px) {
+  .modal-dialog {
+    margin: 0.5rem;
+  }
+  .modal-content {
+    border-radius: 16px;
+  }
+}
+
+/* Prevent text overflow in table cells */
+.table td, .table th {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (max-width: 768px) {
+  .table td, .table th {
+    max-width: 120px;
+    font-size: 12px;
+  }
+}
+
