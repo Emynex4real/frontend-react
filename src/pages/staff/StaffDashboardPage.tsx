@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../context/AuthContext';
-import { staffApi } from '../../services/api';
+import { staffApi, tasksApi } from '../../services/api';
 import type { ReportEntry, Report } from '../../types';
 
 // ── Deadline helpers ──────────────────────────────────────────────
@@ -74,6 +74,13 @@ export default function StaffDashboardPage() {
   const roleId   = user?.role_id   ?? 3;
   const branchId = user?.branch_id ?? 1;
   const userId   = user?.id        ?? 1;
+
+  const { data: myTaskStatsRes } = useQuery({
+    queryKey: ['my-task-stats', userId],
+    queryFn: () => tasksApi.getMyStats(userId, branchId),
+    staleTime: 60000,
+  });
+  const myTaskStats = myTaskStatsRes?.data as { active: number; in_review: number; needs_revision: number; done: number } | undefined;
 
   const { data: assignedRes } = useQuery({
     queryKey: ['assigned-reports', roleId, branchId],
@@ -454,6 +461,56 @@ export default function StaffDashboardPage() {
             )}
           </div>
         </div>
+      </div>
+
+      {/* ── My Tasks Widget ── */}
+      <div style={{ marginTop: 24, background: '#fff', borderRadius: 16, padding: 24, border: '1px solid rgba(0,0,0,0.05)', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
+        <div className="d-flex align-items-center justify-content-between mb-3">
+          <p className="std-sec-title" style={{ margin: 0 }}>
+            <i className="bi bi-list-check" style={{ color: '#8B5CF6' }} />
+            My Tasks
+          </p>
+          <button
+            onClick={() => navigate('/my-tasks')}
+            style={{ background: 'none', border: 'none', color: '#8B5CF6', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+          >View all →</button>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 12 }}>
+          {[
+            { label: 'Active',         value: myTaskStats?.active ?? 0,        color: '#3B82F6', bg: '#EFF6FF',  icon: 'bi-play-circle-fill' },
+            { label: 'Needs Revision', value: myTaskStats?.needs_revision ?? 0, color: '#EF4444', bg: '#FEF2F2',  icon: 'bi-arrow-counterclockwise' },
+            { label: 'In Review',      value: myTaskStats?.in_review ?? 0,      color: '#F59E0B', bg: '#FFFBEB',  icon: 'bi-hourglass-split' },
+            { label: 'Completed',      value: myTaskStats?.done ?? 0,           color: '#10B981', bg: '#ECFDF5',  icon: 'bi-check-circle-fill' },
+          ].map(c => (
+            <div
+              key={c.label}
+              onClick={() => navigate('/my-tasks')}
+              style={{ background: c.bg, borderRadius: 12, padding: '14px 16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12, border: `1px solid ${c.color}20`, transition: 'transform 0.15s' }}
+              onMouseEnter={e => (e.currentTarget.style.transform = 'translateY(-1px)')}
+              onMouseLeave={e => (e.currentTarget.style.transform = 'translateY(0)')}
+            >
+              <div style={{ width: 38, height: 38, borderRadius: 10, background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 2px 6px rgba(0,0,0,0.06)' }}>
+                <i className={`bi ${c.icon}`} style={{ color: c.color, fontSize: 17 }} />
+              </div>
+              <div>
+                <div style={{ fontSize: 22, fontWeight: 700, color: '#09090B', lineHeight: 1 }}>{c.value}</div>
+                <div style={{ fontSize: 11, color: '#71717A', marginTop: 3, fontWeight: 500 }}>{c.label}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+        {(myTaskStats?.needs_revision ?? 0) > 0 && (
+          <div
+            onClick={() => navigate('/my-tasks')}
+            style={{ marginTop: 12, background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 10, padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}
+          >
+            <i className="bi bi-exclamation-triangle-fill" style={{ color: '#DC2626', fontSize: 14 }} />
+            <span style={{ fontSize: 13, color: '#7F1D1D', fontWeight: 600 }}>
+              {myTaskStats?.needs_revision} task{(myTaskStats?.needs_revision ?? 0) > 1 ? 's need' : ' needs'} revision — tap to view
+            </span>
+            <i className="bi bi-arrow-right" style={{ color: '#DC2626', fontSize: 13, marginLeft: 'auto' }} />
+          </div>
+        )}
       </div>
     </div>
   );

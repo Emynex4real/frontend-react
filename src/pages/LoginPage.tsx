@@ -66,14 +66,14 @@ export default function LoginPage() {
         .orb-1 {
           width: 600px;
           height: 600px;
-          background: #F97316; /* Brand Orange */
+          background: #F97316;
           top: -20%;
           left: -10%;
         }
         .orb-2 {
           width: 500px;
           height: 500px;
-          background: #3B82F6; /* Soft Blue */
+          background: #3B82F6;
           bottom: -20%;
           right: -10%;
           animation-delay: -10s;
@@ -85,8 +85,8 @@ export default function LoginPage() {
 
         .vision-content-container {
           width: 100%;
-          maxWidth: 440px;
-          padding: 0 20px;
+          max-width: 440px;
+          padding: 24px 20px;
           position: relative;
           z-index: 10;
         }
@@ -122,6 +122,13 @@ export default function LoginPage() {
           padding: 16px;
           margin-bottom: 32px;
         }
+
+        /* Desktop: single row of 5 */
+        .vision-demo-grid {
+          display: flex;
+          gap: 8px;
+        }
+
         .vision-demo-card {
           flex: 1;
           background: #FFFFFF;
@@ -132,6 +139,7 @@ export default function LoginPage() {
           text-align: center;
           transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
           box-shadow: 0 2px 4px rgba(0,0,0,0.01);
+          min-height: 44px;
         }
         .vision-demo-card:hover {
           transform: translateY(-2px);
@@ -182,6 +190,11 @@ export default function LoginPage() {
           color: #A1A1AA;
           cursor: pointer;
           transition: color 0.2s;
+          min-width: 44px;
+          min-height: 44px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
         .vision-pw-toggle:hover { color: #3F3F46; }
 
@@ -202,6 +215,7 @@ export default function LoginPage() {
           justify-content: center;
           gap: 8px;
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+          min-height: 48px;
         }
         .vision-btn-primary:hover:not(:disabled) {
           background: #27272A;
@@ -236,8 +250,77 @@ export default function LoginPage() {
           border-radius: 50%;
           border-top-color: #FFF;
           animation: spin 0.8s linear infinite;
+          flex-shrink: 0;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ─── SMALL-MEDIUM: 3-col grid ──────────────────── */
+        @media (min-width: 481px) and (max-width: 600px) {
+          .vision-demo-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+          }
+        }
+
+        /* ─── MOBILE STYLES ─────────────────────────────── */
+        @media (max-width: 480px) {
+          .vision-content-container {
+            padding: 16px 12px;
+          }
+
+          /* Shrink orbs so they don't bleed */
+          .orb-1 {
+            width: 280px;
+            height: 280px;
+            top: -10%;
+            left: -15%;
+          }
+          .orb-2 {
+            width: 240px;
+            height: 240px;
+            bottom: -10%;
+            right: -15%;
+          }
+
+          .vision-glass-panel {
+            padding: 20px 16px;
+            border-radius: 20px;
+          }
+
+          .vision-logo-box {
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            margin-bottom: 16px;
+          }
+
+          /* 2-column grid; 5th card (Staff) spans full width */
+          .vision-demo-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+          }
+          .vision-demo-card:last-child {
+            grid-column: 1 / -1;
+          }
+
+          .vision-demo-section {
+            padding: 12px;
+            margin-bottom: 20px;
+          }
+
+          /* font-size 16px prevents iOS auto-zoom on focus */
+          .vision-input {
+            padding: 12px 12px 12px 10px;
+            font-size: 16px;
+          }
+
+          .vision-btn-primary {
+            font-size: 16px;
+            padding: 15px;
+          }
+        }
       `}</style>
 
       {/* Ambient Background Elements */}
@@ -254,7 +337,7 @@ export default function LoginPage() {
           <h2 style={{ fontSize: 24, fontWeight: 700, color: '#09090B', margin: '0 0 8px 0', letterSpacing: '-0.5px' }}>
             Digital World Admin
           </h2>
-          <p style={{ fontSize: 14, color: '#71717A', margin: '0 0 32px 0' }}>
+          <p style={{ fontSize: 14, color: '#71717A', margin: '0 0 28px 0' }}>
             Sign in to access your workspace
           </p>
         </div>
@@ -270,7 +353,7 @@ export default function LoginPage() {
               </span>
             </div>
             
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div className="vision-demo-grid">
               {DEMO_ACCOUNTS.map(a => (
                 <button
                   key={a.username}
@@ -279,7 +362,7 @@ export default function LoginPage() {
                   className="vision-demo-card"
                   onClick={() => doLogin(a.username, 'demo')}
                 >
-                  <div style={{ width: 32, height: 32, borderRadius: '50%', background: a.bg, color: a.color, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
+                  <div style={{ width: 32, height: 32, borderRadius: '50%', background: a.bg, color: a.color, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 6 }}>
                     <i className={`bi ${a.icon}`} style={{ fontSize: 14 }} />
                   </div>
                   <div style={{ fontSize: 12, fontWeight: 700, color: '#09090B', lineHeight: 1.2 }}>{a.label}</div>
@@ -289,7 +372,7 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16, margin: '24px 0' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, margin: '20px 0' }}>
             <div style={{ flex: 1, height: 1, background: 'rgba(0,0,0,0.06)' }} />
             <span style={{ fontSize: 12, fontWeight: 600, color: '#A1A1AA', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Or</span>
             <div style={{ flex: 1, height: 1, background: 'rgba(0,0,0,0.06)' }} />
@@ -318,11 +401,12 @@ export default function LoginPage() {
                   onChange={e => setForm(f => ({ ...f, username: e.target.value }))}
                   required
                   autoFocus
+                  autoComplete="username"
                 />
               </div>
             </div>
 
-            <div style={{ marginBottom: 32 }}>
+            <div style={{ marginBottom: 28 }}>
               <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#3F3F46', marginBottom: 8 }}>
                 Password
               </label>
@@ -335,12 +419,14 @@ export default function LoginPage() {
                   value={form.password}
                   onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
                   required
+                  autoComplete="current-password"
                 />
                 <button
                   type="button"
                   className="vision-pw-toggle"
                   onClick={() => setShowPw(s => !s)}
                   tabIndex={-1}
+                  aria-label={showPw ? 'Hide password' : 'Show password'}
                 >
                   <i className={`bi bi-eye${showPw ? '-slash' : ''}`} />
                 </button>
@@ -362,7 +448,7 @@ export default function LoginPage() {
 
         </div>
         
-        <p style={{ textAlign: 'center', marginTop: 24, fontSize: 12, color: '#A1A1AA', fontWeight: 500 }}>
+        <p style={{ textAlign: 'center', marginTop: 20, fontSize: 12, color: '#A1A1AA', fontWeight: 500 }}>
           © {new Date().getFullYear()} Digital World. All rights reserved.
         </p>
       </div>

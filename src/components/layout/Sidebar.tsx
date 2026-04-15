@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../context/AuthContext';
+import { tasksApi } from '../../services/api';
 
 interface NavItem {
   label: string;
@@ -12,6 +14,7 @@ interface NavItem {
 
 const ADMIN_NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard', icon: 'bi-grid-1x2', path: '/' },
+  { label: 'Task Manager', icon: 'bi-kanban', path: '/tasks', permission: 'manage_reports' },
   {
     label: 'Branches',
     icon: 'bi-buildings',
@@ -79,6 +82,7 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
 
 const MANAGER_NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard', icon: 'bi-grid-1x2', path: '/manager' },
+  { label: 'Task Manager', icon: 'bi-kanban', path: '/manager/tasks' },
   {
     label: 'Branch Templates',
     icon: 'bi-file-earmark-text',
@@ -114,6 +118,7 @@ const MANAGER_NAV_ITEMS: NavItem[] = [
 
 const STAFF_NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard', icon: 'bi-grid-1x2', path: '/staff' },
+  { label: 'My Tasks', icon: 'bi-list-check', path: '/my-tasks' },
   {
     label: 'My Reports',
     icon: 'bi-journal-check',
@@ -135,6 +140,14 @@ export default function Sidebar({ collapsed, mobileOpen, isMobile, onClose }: Si
   const location = useLocation();
   const { can, isAdmin, isManager } = useAuth();
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
+
+  const { data: taskStatsData } = useQuery({
+    queryKey: ['task-stats'],
+    queryFn: () => tasksApi.getStats(),
+    staleTime: 60000,
+    enabled: isAdmin(),
+  });
+  const overdueCount: number = (taskStatsData?.data as { overdue?: number } | undefined)?.overdue ?? 0;
 
   // Close mobile drawer on route change
   useEffect(() => {
@@ -360,9 +373,20 @@ export default function Sidebar({ collapsed, mobileOpen, isMobile, onClose }: Si
                 >
                   <i className={`bi ${item.icon}`} style={{ fontSize: 18, flexShrink: 0, opacity: 0.9 }} />
                   {(isMobile || !collapsed) && (
-                    <span className="ms-3" style={{ whiteSpace: 'nowrap' }}>
-                      {item.label}
-                    </span>
+                    <>
+                      <span className="ms-3 flex-grow-1" style={{ whiteSpace: 'nowrap' }}>
+                        {item.label}
+                      </span>
+                      {item.path === '/tasks' && overdueCount > 0 && (
+                        <span style={{
+                          fontSize: 10, fontWeight: 800, color: '#fff',
+                          background: '#EF4444', borderRadius: 20,
+                          padding: '1px 6px', marginLeft: 4, flexShrink: 0,
+                        }}>
+                          {overdueCount}
+                        </span>
+                      )}
+                    </>
                   )}
                 </NavLink>
               );

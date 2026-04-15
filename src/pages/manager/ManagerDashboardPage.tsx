@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../../context/AuthContext'
-import { branchManagerApi } from '../../services/api'
+import { branchManagerApi, tasksApi } from '../../services/api'
 
 interface BranchStats {
   total_templates: number
@@ -19,8 +20,16 @@ export default function ManagerDashboardPage() {
   const [loading, setLoading] = useState(true)
 
   const branchId = user?.branch_id ?? 0
+  const managerId = user?.id ?? 0
   const branchName = user?.branch_name ?? 'Your Branch'
   const firstName = user?.full_name?.split(' ')[0] ?? 'Manager'
+
+  const { data: myTaskStatsRes } = useQuery({
+    queryKey: ['my-task-stats', managerId],
+    queryFn: () => tasksApi.getMyStats(managerId, branchId),
+    staleTime: 60000,
+  })
+  const myTaskStats = myTaskStatsRes?.data as { active: number; in_review: number; needs_revision: number; done: number } | undefined
 
   const now = new Date()
   const hour = now.getHours()
@@ -211,6 +220,51 @@ export default function ManagerDashboardPage() {
           )}
         </div>
 
+      </div>
+
+      {/* Task Manager Widget */}
+      <div style={{ marginTop: 20, background: '#fff', borderRadius: 16, padding: 24, border: '1px solid rgba(0,0,0,0.04)', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
+        <div className="d-flex align-items-center justify-content-between mb-3">
+          <h6 style={{ fontWeight: 700, color: '#09090B', margin: 0, fontSize: 14 }}>
+            <i className="bi bi-kanban me-2" style={{ color: '#8B5CF6' }} />Task Manager
+          </h6>
+          <button
+            onClick={() => navigate('/manager/tasks')}
+            style={{ background: 'none', border: 'none', color: '#8B5CF6', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+          >Open Board →</button>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+          {[
+            { label: 'Active',        value: myTaskStats?.active ?? 0,         color: '#3B82F6', bg: '#EFF6FF', icon: 'bi-play-circle' },
+            { label: 'In Review',     value: myTaskStats?.in_review ?? 0,       color: '#F59E0B', bg: '#FFFBEB', icon: 'bi-hourglass-split' },
+            { label: 'Needs Revision',value: myTaskStats?.needs_revision ?? 0,  color: '#EF4444', bg: '#FEF2F2', icon: 'bi-arrow-counterclockwise' },
+            { label: 'Completed',     value: myTaskStats?.done ?? 0,            color: '#10B981', bg: '#ECFDF5', icon: 'bi-check-circle' },
+          ].map(c => (
+            <div
+              key={c.label}
+              onClick={() => navigate('/manager/tasks')}
+              style={{ background: c.bg, borderRadius: 12, padding: '14px 16px', cursor: 'pointer', transition: 'transform 0.15s', border: `1px solid ${c.color}20` }}
+              onMouseEnter={e => (e.currentTarget.style.transform = 'translateY(-2px)')}
+              onMouseLeave={e => (e.currentTarget.style.transform = 'translateY(0)')}
+            >
+              <i className={`bi ${c.icon}`} style={{ color: c.color, fontSize: 20, display: 'block', marginBottom: 8 }} />
+              <div style={{ fontSize: 24, fontWeight: 700, color: '#09090B', lineHeight: 1 }}>{c.value}</div>
+              <div style={{ fontSize: 11, color: '#71717A', marginTop: 4, fontWeight: 500 }}>{c.label}</div>
+            </div>
+          ))}
+        </div>
+        {(myTaskStats?.needs_revision ?? 0) > 0 && (
+          <div
+            onClick={() => navigate('/manager/tasks')}
+            style={{ marginTop: 12, background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 10, padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}
+          >
+            <i className="bi bi-exclamation-triangle-fill" style={{ color: '#DC2626', fontSize: 14 }} />
+            <span style={{ fontSize: 13, color: '#7F1D1D', fontWeight: 600 }}>
+              {myTaskStats?.needs_revision} task{(myTaskStats?.needs_revision ?? 0) > 1 ? 's' : ''} returned for revision — action required
+            </span>
+            <i className="bi bi-arrow-right" style={{ color: '#DC2626', fontSize: 13, marginLeft: 'auto' }} />
+          </div>
+        )}
       </div>
     </div>
   )

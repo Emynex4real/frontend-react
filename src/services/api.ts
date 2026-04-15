@@ -9,6 +9,8 @@ import type {
   ReportEntry, ReportEntryForm,
   AuthUser, LoginCredentials,
   DashboardStats, SubmissionReviewAction,
+  Task, TaskForm, TaskComment, SubTask,
+  Notification,
 } from '../types'
 
 const BASE_URL = '/api'
@@ -502,6 +504,544 @@ export const dashboardApi = MOCK ? {
 }
 
 export default client
+
+// ─── Task Manager Mock Data ────────────────────────────────────────────────
+
+const now = new Date()
+const daysAgo = (n: number) => new Date(now.getTime() - n * 86400000).toISOString()
+const daysFromNow = (n: number) => new Date(now.getTime() + n * 86400000).toISOString().split('T')[0]
+const daysAgoDate = (n: number) => new Date(now.getTime() - n * 86400000).toISOString().split('T')[0]
+
+let mockTasks: Task[] = [
+  {
+    id: 1, title: 'Complete Q2 Compliance Audit', description: 'Review all branch compliance documents for Q2. Ensure all branches have submitted their compliance reports and flag any outstanding items for follow-up.',
+    type: 'compliance', status: 'in_progress', priority: 'critical', scope: 'branch',
+    assigned_to: [2, 4], assignee_names: ['John Doe', 'Ana Cruz'],
+    assigned_branch_id: 2, assigned_branch_name: 'Cebu Branch',
+    due_date: daysFromNow(3), start_date: daysAgoDate(5),
+    labels: ['Q2', 'Audit', 'Compliance'],
+    subtasks: [
+      { id: 's1', title: 'Collect compliance docs from all departments', completed: true },
+      { id: 's2', title: 'Cross-check against regulatory checklist', completed: true },
+      { id: 's3', title: 'Submit final audit report to Super Admin', completed: false },
+    ],
+    comments: [
+      { id: 1, task_id: 1, author_id: 2, author_name: 'John Doe', author_role: 'Branch Manager', body: 'Docs from Sales and HR collected. IT department still pending.', created_at: daysAgo(2) },
+      { id: 2, task_id: 1, author_id: 4, author_name: 'Ana Cruz', author_role: 'Assistant Manager', body: 'I followed up with IT. They will submit by EOD today.', created_at: daysAgo(1) },
+    ],
+    activity: [
+      { id: 1, task_id: 1, actor_id: 1, actor_name: 'Admin User', action: 'created', created_at: daysAgo(5) },
+      { id: 2, task_id: 1, actor_id: 1, actor_name: 'Admin User', action: 'assigned', to_value: 'John Doe, Ana Cruz', created_at: daysAgo(5) },
+      { id: 3, task_id: 1, actor_id: 2, actor_name: 'John Doe', action: 'status_changed', from_value: 'todo', to_value: 'in_progress', created_at: daysAgo(4) },
+    ],
+    created_by: 1, creator_name: 'Admin User', created_at: daysAgo(5), updated_at: daysAgo(1),
+  },
+  {
+    id: 2, title: 'Onboard New Sales Staff — Cebu Branch', description: 'Complete HR onboarding for 3 new sales staff members. Includes system access setup, orientation schedule, and documentation.',
+    type: 'hr', status: 'todo', priority: 'high', scope: 'branch',
+    assigned_to: [4], assignee_names: ['Ana Cruz'],
+    assigned_branch_id: 2, assigned_branch_name: 'Cebu Branch',
+    due_date: daysFromNow(7),
+    labels: ['Onboarding', 'HR'],
+    subtasks: [
+      { id: 's1', title: 'Prepare welcome kit and access credentials', completed: false },
+      { id: 's2', title: 'Schedule orientation with department heads', completed: false },
+      { id: 's3', title: 'Complete employment contract documentation', completed: false },
+    ],
+    comments: [],
+    activity: [
+      { id: 1, task_id: 2, actor_id: 1, actor_name: 'Admin User', action: 'created', created_at: daysAgo(2) },
+      { id: 2, task_id: 2, actor_id: 1, actor_name: 'Admin User', action: 'assigned', to_value: 'Ana Cruz', created_at: daysAgo(2) },
+    ],
+    created_by: 1, creator_name: 'Admin User', created_at: daysAgo(2), updated_at: daysAgo(2),
+  },
+  {
+    id: 3, title: 'Monthly Sales Report Review', description: 'Review and consolidate all branch monthly sales summaries. Prepare executive summary for board meeting.',
+    type: 'sales', status: 'in_review', priority: 'high', scope: 'individual',
+    assigned_to: [2], assignee_names: ['John Doe'],
+    due_date: daysFromNow(1),
+    labels: ['Monthly', 'Sales', 'Board'],
+    subtasks: [
+      { id: 's1', title: 'Collect sales data from all 3 branches', completed: true },
+      { id: 's2', title: 'Prepare consolidated summary document', completed: true },
+      { id: 's3', title: 'Present to Super Admin for approval', completed: false },
+    ],
+    comments: [
+      { id: 3, task_id: 3, author_id: 2, author_name: 'John Doe', author_role: 'Branch Manager', body: 'Draft summary ready for review. Attached in shared drive.', created_at: daysAgo(1) },
+    ],
+    activity: [
+      { id: 1, task_id: 3, actor_id: 1, actor_name: 'Admin User', action: 'created', created_at: daysAgo(6) },
+      { id: 2, task_id: 3, actor_id: 2, actor_name: 'John Doe', action: 'status_changed', from_value: 'in_progress', to_value: 'in_review', created_at: daysAgo(1) },
+    ],
+    created_by: 1, creator_name: 'Admin User', created_at: daysAgo(6), updated_at: daysAgo(1),
+  },
+  {
+    id: 4, title: 'IT Infrastructure Upgrade — Head Office', description: 'Coordinate the server room upgrade including new switches, UPS replacement and cabling audit. Minimize downtime.',
+    type: 'it', status: 'backlog', priority: 'medium', scope: 'individual',
+    assigned_to: [3], assignee_names: ['Mary Smith'],
+    due_date: daysFromNow(14),
+    labels: ['IT', 'Infrastructure'],
+    subtasks: [
+      { id: 's1', title: 'Get vendor quotes for new switches', completed: false },
+      { id: 's2', title: 'Schedule maintenance window with operations', completed: false },
+      { id: 's3', title: 'Execute upgrade and test connectivity', completed: false },
+    ],
+    comments: [],
+    activity: [
+      { id: 1, task_id: 4, actor_id: 1, actor_name: 'Admin User', action: 'created', created_at: daysAgo(1) },
+    ],
+    created_by: 1, creator_name: 'Admin User', created_at: daysAgo(1), updated_at: daysAgo(1),
+  },
+  {
+    id: 5, title: 'Q1 Financial Reconciliation', description: 'Reconcile all branch financial records for Q1. Identify discrepancies and prepare audit trail documentation.',
+    type: 'finance', status: 'done', priority: 'critical', scope: 'individual',
+    assigned_to: [5], assignee_names: ['Ben Santos'],
+    due_date: daysAgoDate(3),
+    labels: ['Finance', 'Q1', 'Audit'],
+    subtasks: [
+      { id: 's1', title: 'Pull all transaction records', completed: true },
+      { id: 's2', title: 'Reconcile with bank statements', completed: true },
+      { id: 's3', title: 'Submit reconciliation report', completed: true },
+    ],
+    comments: [
+      { id: 4, task_id: 5, author_id: 5, author_name: 'Ben Santos', author_role: 'Branch Administrator', body: 'Reconciliation complete. All figures match. Report submitted.', created_at: daysAgo(3) },
+    ],
+    activity: [
+      { id: 1, task_id: 5, actor_id: 1, actor_name: 'Admin User', action: 'created', created_at: daysAgo(14) },
+      { id: 2, task_id: 5, actor_id: 5, actor_name: 'Ben Santos', action: 'status_changed', from_value: 'in_review', to_value: 'done', created_at: daysAgo(3) },
+    ],
+    created_by: 1, creator_name: 'Admin User', created_at: daysAgo(14), updated_at: daysAgo(3),
+  },
+  {
+    id: 6, title: 'Branch Operations SOP Update', description: 'Update the standard operating procedures document for all branches to reflect the new workflows introduced in Q1.',
+    type: 'operations', status: 'todo', priority: 'medium', scope: 'branch',
+    assigned_to: [2, 5], assignee_names: ['John Doe', 'Ben Santos'],
+    assigned_branch_id: 2, assigned_branch_name: 'Cebu Branch',
+    due_date: daysFromNow(10),
+    labels: ['Operations', 'SOP'],
+    subtasks: [
+      { id: 's1', title: 'Review current SOP document', completed: false },
+      { id: 's2', title: 'Identify outdated sections', completed: false },
+      { id: 's3', title: 'Draft revised procedures', completed: false },
+      { id: 's4', title: 'Get sign-off from branch managers', completed: false },
+    ],
+    comments: [],
+    activity: [
+      { id: 1, task_id: 6, actor_id: 1, actor_name: 'Admin User', action: 'created', created_at: daysAgo(3) },
+    ],
+    created_by: 1, creator_name: 'Admin User', created_at: daysAgo(3), updated_at: daysAgo(3),
+  },
+  {
+    id: 7, title: 'Overdue: Staff Attendance Policy Review', description: 'Review and update staff attendance policy. This has been overdue since last quarter.',
+    type: 'hr', status: 'in_progress', priority: 'low', scope: 'individual',
+    assigned_to: [4], assignee_names: ['Ana Cruz'],
+    due_date: daysAgoDate(5),
+    labels: ['HR', 'Policy'],
+    subtasks: [
+      { id: 's1', title: 'Gather attendance data from all branches', completed: true },
+      { id: 's2', title: 'Draft new policy document', completed: false },
+    ],
+    comments: [],
+    activity: [
+      { id: 1, task_id: 7, actor_id: 1, actor_name: 'Admin User', action: 'created', created_at: daysAgo(20) },
+      { id: 2, task_id: 7, actor_id: 4, actor_name: 'Ana Cruz', action: 'status_changed', from_value: 'todo', to_value: 'in_progress', created_at: daysAgo(10) },
+    ],
+    created_by: 1, creator_name: 'Admin User', created_at: daysAgo(20), updated_at: daysAgo(10),
+  },
+  {
+    id: 8, title: 'General Admin: Office Supplies Procurement', description: 'Coordinate procurement of office supplies for Head Office. Get quotes from at least 3 vendors.',
+    type: 'general', status: 'backlog', priority: 'low', scope: 'individual',
+    assigned_to: [5], assignee_names: ['Ben Santos'],
+    due_date: daysFromNow(21),
+    labels: ['Admin', 'Procurement'],
+    subtasks: [],
+    comments: [],
+    activity: [
+      { id: 1, task_id: 8, actor_id: 1, actor_name: 'Admin User', action: 'created', created_at: daysAgo(1) },
+    ],
+    created_by: 1, creator_name: 'Admin User', created_at: daysAgo(1), updated_at: daysAgo(1),
+  },
+  // ── Delegation demo tasks (assigned to manager by admin) ──────────────────
+  {
+    id: 9,
+    title: 'Q2 Branch Performance Review',
+    description: 'Compile the full Q2 performance data for Cebu Branch — sales figures, compliance rate, headcount, and staff KPIs. Prepare an executive summary for the board.',
+    type: 'operations', status: 'in_progress', priority: 'high', scope: 'individual',
+    assigned_to: [2], assignee_names: ['John Doe'],
+    due_date: daysFromNow(5), start_date: daysAgoDate(3),
+    labels: ['Q2', 'Board', 'Performance'],
+    subtasks: [
+      { id: 's1', title: 'Compile sales figures from all departments', completed: true },
+      { id: 's2', title: 'Gather compliance rate data', completed: true },
+      { id: 's3', title: 'Prepare headcount and KPI summary', completed: false },
+      { id: 's4', title: 'Write executive summary', completed: false },
+    ],
+    comments: [
+      { id: 10, task_id: 9, author_id: 2, author_name: 'John Doe', author_role: 'Branch Manager', body: 'Delegated data gathering to Ana Cruz. Will compile final report myself.', created_at: daysAgo(2) },
+    ],
+    activity: [
+      { id: 1, task_id: 9, actor_id: 1, actor_name: 'Admin User', action: 'created', created_at: daysAgo(4) },
+      { id: 2, task_id: 9, actor_id: 1, actor_name: 'Admin User', action: 'assigned', to_value: 'John Doe', created_at: daysAgo(4) },
+      { id: 3, task_id: 9, actor_id: 2, actor_name: 'John Doe', action: 'status_changed', from_value: 'todo', to_value: 'in_progress', created_at: daysAgo(3) },
+    ],
+    // Delegation metadata
+    delegated_to: [4], delegated_names: ['Ana Cruz'],
+    delegate_note: 'Ana, please pull all department KPIs and the compliance data. Send me the compiled spreadsheet by Thursday so I can write the final summary.',
+    delegated_at: daysAgo(2),
+    progress_note: 'Sales and compliance data collected. Ana is finalising headcount KPIs. On track for the due date.',
+    progress_note_at: daysAgo(1), progress_note_author: 'John Doe',
+    created_by: 1, creator_name: 'Admin User', created_at: daysAgo(4), updated_at: daysAgo(1),
+  },
+  {
+    id: 10,
+    title: 'Staff Welfare & Engagement Report — Cebu Branch',
+    description: 'Prepare a comprehensive report on staff welfare initiatives, engagement scores, and retention metrics for H1. Highlight any risks and recommend actions.',
+    type: 'hr', status: 'todo', priority: 'medium', scope: 'individual',
+    assigned_to: [2], assignee_names: ['John Doe'],
+    due_date: daysFromNow(10),
+    labels: ['HR', 'Welfare', 'H1'],
+    subtasks: [
+      { id: 's1', title: 'Gather engagement survey results', completed: false },
+      { id: 's2', title: 'Pull retention and attrition data', completed: false },
+      { id: 's3', title: 'Document welfare initiatives implemented', completed: false },
+      { id: 's4', title: 'Write recommendations section', completed: false },
+    ],
+    comments: [],
+    activity: [
+      { id: 1, task_id: 10, actor_id: 1, actor_name: 'Admin User', action: 'created', created_at: daysAgo(2) },
+      { id: 2, task_id: 10, actor_id: 1, actor_name: 'Admin User', action: 'assigned', to_value: 'John Doe', created_at: daysAgo(2) },
+    ],
+    created_by: 1, creator_name: 'Admin User', created_at: daysAgo(2), updated_at: daysAgo(2),
+  },
+]
+
+let mockNotifications: Notification[] = [
+  { id: 1, user_id: 1, title: 'Task Assigned to You', body: 'Monthly Sales Report Review has been assigned to you by Admin User.', type: 'task_assigned', reference_id: 3, reference_type: 'task', read: false, created_at: daysAgo(1) },
+  { id: 2, user_id: 1, title: 'New Comment on Task', body: 'John Doe commented on "Complete Q2 Compliance Audit".', type: 'task_comment', reference_id: 1, reference_type: 'task', read: false, created_at: daysAgo(1) },
+  { id: 3, user_id: 1, title: 'Task Overdue', body: '"Overdue: Staff Attendance Policy Review" is 5 days past due date.', type: 'task_overdue', reference_id: 7, reference_type: 'task', read: false, created_at: daysAgo(0) },
+  { id: 4, user_id: 1, title: 'Report Submitted', body: 'John Doe submitted Weekly Activity Report for Cebu Branch.', type: 'report_submitted', reference_id: 4, reference_type: 'submission', read: false, created_at: daysAgo(2) },
+  { id: 5, user_id: 1, title: 'Task Completed', body: 'Ben Santos marked "Q1 Financial Reconciliation" as done.', type: 'task_updated', reference_id: 5, reference_type: 'task', read: true, created_at: daysAgo(3) },
+  { id: 6, user_id: 1, title: 'Report Rejected', body: 'Mary Smith\'s IT Incident Report was rejected — awaiting resubmission.', type: 'report_rejected', reference_id: 12, reference_type: 'submission', read: true, created_at: daysAgo(4) },
+]
+
+// ─── Tasks API ────────────────────────────────────────────────────────────────
+
+export const tasksApi = MOCK ? {
+  getAll: () => delay([...mockTasks]),
+  getOne: (id: number) => delay(mockTasks.find(t => t.id === id)!),
+  create: (data: TaskForm & { assignee_names?: string[]; assigned_branch_name?: string }) => {
+    const newId = Date.now()
+    const newTask: Task = {
+      title: data.title,
+      description: data.description,
+      type: data.type,
+      status: 'todo',
+      priority: data.priority,
+      scope: data.scope,
+      assigned_to: data.assigned_to,
+      assignee_names: data.assignee_names,
+      assigned_branch_id: data.assigned_branch_id,
+      assigned_branch_name: data.assigned_branch_name,
+      due_date: data.due_date,
+      start_date: data.start_date,
+      labels: data.labels,
+      subtasks: data.subtasks.map((s, i) => ({ ...s, id: `s${newId}${i}` })),
+      comments: [],
+      activity: [{ id: newId, task_id: newId, actor_id: 1, actor_name: 'Admin User', action: 'created', created_at: new Date().toISOString() }],
+      id: newId,
+      created_by: 1,
+      creator_name: 'Admin User',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }
+    mockTasks.push(newTask)
+    return delay(newTask)
+  },
+  update: (id: number, data: Partial<TaskForm> & { assignee_names?: string[]; assigned_branch_name?: string }) => {
+    const idx = mockTasks.findIndex(t => t.id === id)
+    if (idx !== -1) {
+      const updatedSubtasks = data.subtasks
+        ? data.subtasks.map((s, i) => ({ ...s, id: `s${id}${i}` }))
+        : mockTasks[idx].subtasks
+      mockTasks[idx] = { ...mockTasks[idx], ...data, subtasks: updatedSubtasks, updated_at: new Date().toISOString() }
+      mockTasks[idx].activity.push({ id: Date.now(), task_id: id, actor_id: 1, actor_name: 'Admin User', action: 'edited', created_at: new Date().toISOString() })
+    }
+    return delay(mockTasks[idx])
+  },
+  updateStatus: (id: number, status: Task['status']) => {
+    const idx = mockTasks.findIndex(t => t.id === id)
+    if (idx !== -1) {
+      const prev = mockTasks[idx].status
+      mockTasks[idx] = { ...mockTasks[idx], status, updated_at: new Date().toISOString() }
+      mockTasks[idx].activity.push({ id: Date.now(), task_id: id, actor_id: 1, actor_name: 'Admin User', action: 'status_changed', from_value: prev, to_value: status, created_at: new Date().toISOString() })
+    }
+    return delay(mockTasks[idx])
+  },
+  toggleSubtask: (taskId: number, subtaskId: string) => {
+    const idx = mockTasks.findIndex(t => t.id === taskId)
+    if (idx !== -1) {
+      const sIdx = mockTasks[idx].subtasks.findIndex((s: SubTask) => s.id === subtaskId)
+      if (sIdx !== -1) {
+        mockTasks[idx].subtasks[sIdx].completed = !mockTasks[idx].subtasks[sIdx].completed
+        if (mockTasks[idx].subtasks[sIdx].completed) {
+          mockTasks[idx].activity.push({ id: Date.now(), task_id: taskId, actor_id: 1, actor_name: 'Admin User', action: 'subtask_completed', to_value: mockTasks[idx].subtasks[sIdx].title, created_at: new Date().toISOString() })
+        }
+      }
+    }
+    return delay(mockTasks[idx])
+  },
+  addComment: (taskId: number, body: string) => {
+    const idx = mockTasks.findIndex(t => t.id === taskId)
+    const comment: TaskComment = { id: Date.now(), task_id: taskId, author_id: _mockSession.id, author_name: _mockSession.full_name, author_role: _mockSession.role_name, body, created_at: new Date().toISOString() }
+    if (idx !== -1) {
+      mockTasks[idx].comments.push(comment)
+      mockTasks[idx].activity.push({ id: Date.now() + 1, task_id: taskId, actor_id: _mockSession.id, actor_name: _mockSession.full_name, action: 'commented', to_value: body.slice(0, 60), created_at: new Date().toISOString() })
+      mockTasks[idx].updated_at = new Date().toISOString()
+    }
+    return delay(comment)
+  },
+  // ── Delegation ───────────────────────────────────────
+  delegate: (id: number, userIds: number[], userNames: string[], note?: string) => {
+    const idx = mockTasks.findIndex(t => t.id === id)
+    if (idx !== -1) {
+      mockTasks[idx] = {
+        ...mockTasks[idx],
+        delegated_to: userIds,
+        delegated_names: userNames,
+        delegate_note: note,
+        delegated_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }
+      mockTasks[idx].activity.push({
+        id: Date.now(), task_id: id, actor_id: _mockSession.id, actor_name: _mockSession.full_name,
+        action: 'assigned', to_value: userNames.join(', '),
+        created_at: new Date().toISOString(),
+      })
+      userIds.forEach(uid => {
+        mockNotifications.unshift({
+          id: Date.now() + uid, user_id: uid,
+          title: 'Task Delegated to You',
+          body: `${_mockSession.full_name} delegated "${mockTasks[idx].title}" to you.`,
+          type: 'task_assigned', reference_id: id, reference_type: 'task', read: false,
+          created_at: new Date().toISOString(),
+        })
+      })
+    }
+    return delay(mockTasks[idx])
+  },
+
+  // ── Progress note ─────────────────────────────────────
+  addProgressNote: (id: number, note: string) => {
+    const idx = mockTasks.findIndex(t => t.id === id)
+    if (idx !== -1) {
+      mockTasks[idx] = {
+        ...mockTasks[idx],
+        progress_note: note,
+        progress_note_at: new Date().toISOString(),
+        progress_note_author: _mockSession.full_name,
+        updated_at: new Date().toISOString(),
+      }
+    }
+    return delay(mockTasks[idx])
+  },
+
+  // ── Workflow actions ─────────────────────────────────
+  submitForReview: (id: number, achievement_summary?: string, key_outcomes?: string[], challenges_faced?: string, revision_response?: string, taggedReviewers?: number[]) => {
+    const idx = mockTasks.findIndex(t => t.id === id)
+    if (idx !== -1) {
+      const taggedNames = (taggedReviewers ?? []).map(uid => mockUsers.find(u => u.id === uid)?.full_name ?? `User ${uid}`)
+      mockTasks[idx] = {
+        ...mockTasks[idx],
+        status: 'in_review',
+        achievement_summary,
+        key_outcomes: key_outcomes ?? [],
+        challenges_faced,
+        revision_response,
+        submission_note: achievement_summary,          // keep compat
+        tagged_reviewers: taggedReviewers ?? [],
+        tagged_reviewer_names: taggedNames,
+        revision_reason: undefined,
+        updated_at: new Date().toISOString(),
+      }
+      mockTasks[idx].activity.push({
+        id: Date.now(), task_id: id, actor_id: _mockSession.id, actor_name: _mockSession.full_name,
+        action: 'status_changed', from_value: 'in_progress', to_value: 'in_review',
+        created_at: new Date().toISOString(),
+      })
+      mockNotifications.unshift({
+        id: Date.now(), user_id: mockTasks[idx].created_by,
+        title: 'Task Ready for Review',
+        body: `${_mockSession.full_name} submitted "${mockTasks[idx].title}" for your review.`,
+        type: 'task_updated', reference_id: id, reference_type: 'task', read: false,
+        created_at: new Date().toISOString(),
+      })
+    }
+    return delay(mockTasks[idx])
+  },
+  approve: (id: number) => {
+    const idx = mockTasks.findIndex(t => t.id === id)
+    if (idx !== -1) {
+      mockTasks[idx] = { ...mockTasks[idx], status: 'done', updated_at: new Date().toISOString() }
+      mockTasks[idx].activity.push({
+        id: Date.now(), task_id: id, actor_id: _mockSession.id, actor_name: _mockSession.full_name,
+        action: 'status_changed', from_value: 'in_review', to_value: 'done',
+        created_at: new Date().toISOString(),
+      })
+      // Notify assignees
+      mockTasks[idx].assigned_to.forEach(uid => {
+        mockNotifications.unshift({
+          id: Date.now() + uid, user_id: uid,
+          title: 'Task Approved',
+          body: `${_mockSession.full_name} approved your task: "${mockTasks[idx].title}".`,
+          type: 'task_updated', reference_id: id, reference_type: 'task', read: false,
+          created_at: new Date().toISOString(),
+        })
+      })
+    }
+    return delay(mockTasks[idx])
+  },
+  reject: (id: number, reason: string) => {
+    const idx = mockTasks.findIndex(t => t.id === id)
+    if (idx !== -1) {
+      mockTasks[idx] = {
+        ...mockTasks[idx],
+        status: 'needs_revision',
+        revision_reason: reason,
+        updated_at: new Date().toISOString(),
+      }
+      mockTasks[idx].activity.push({
+        id: Date.now(), task_id: id, actor_id: _mockSession.id, actor_name: _mockSession.full_name,
+        action: 'status_changed', from_value: 'in_review', to_value: 'needs_revision',
+        created_at: new Date().toISOString(),
+      })
+      // Notify assignees
+      mockTasks[idx].assigned_to.forEach(uid => {
+        mockNotifications.unshift({
+          id: Date.now() + uid, user_id: uid,
+          title: 'Task Needs Revision',
+          body: `${_mockSession.full_name} returned "${mockTasks[idx].title}" for revision: "${reason.slice(0, 80)}"`,
+          type: 'task_updated', reference_id: id, reference_type: 'task', read: false,
+          created_at: new Date().toISOString(),
+        })
+      })
+    }
+    return delay(mockTasks[idx])
+  },
+  resubmit: (id: number, achievement_summary?: string, key_outcomes?: string[], challenges_faced?: string, revision_response?: string) => {
+    const idx = mockTasks.findIndex(t => t.id === id)
+    if (idx !== -1) {
+      mockTasks[idx] = {
+        ...mockTasks[idx],
+        status: 'in_review',
+        achievement_summary,
+        key_outcomes: key_outcomes ?? [],
+        challenges_faced,
+        revision_response,
+        submission_note: achievement_summary,
+        revision_reason: undefined,
+        updated_at: new Date().toISOString(),
+      }
+      mockTasks[idx].activity.push({
+        id: Date.now(), task_id: id, actor_id: _mockSession.id, actor_name: _mockSession.full_name,
+        action: 'status_changed', from_value: 'needs_revision', to_value: 'in_review',
+        created_at: new Date().toISOString(),
+      })
+      mockNotifications.unshift({
+        id: Date.now(), user_id: mockTasks[idx].created_by,
+        title: 'Task Resubmitted',
+        body: `${_mockSession.full_name} resubmitted "${mockTasks[idx].title}" for review.`,
+        type: 'task_updated', reference_id: id, reference_type: 'task', read: false,
+        created_at: new Date().toISOString(),
+      })
+    }
+    return delay(mockTasks[idx])
+  },
+  // Get tasks visible to a specific user (staff/manager)
+  getMyTasks: (userId: number, branchId?: number) => {
+    const myTasks = mockTasks.filter(t =>
+      t.status !== 'cancelled' && (
+        t.assigned_to.includes(userId) ||
+        (branchId && t.scope === 'branch' && t.assigned_branch_id === branchId) ||
+        (t.delegated_to ?? []).includes(userId)
+      )
+    )
+    return delay(myTasks)
+  },
+  // Get tasks for a Branch Manager (all branch tasks + tasks they created)
+  getManagerTasks: (managerId: number, branchId: number) => {
+    const managerTasks = mockTasks.filter(t =>
+      t.status !== 'cancelled' && (
+        t.created_by === managerId ||
+        t.assigned_to.includes(managerId) ||
+        (t.scope === 'branch' && t.assigned_branch_id === branchId)
+      )
+    )
+    return delay(managerTasks)
+  },
+  delete: (id: number) => {
+    mockTasks = mockTasks.filter(t => t.id !== id)
+    return delay(null)
+  },
+  getStats: () => {
+    const total = mockTasks.length
+    const byStatus: Record<string, number> = { backlog: 0, todo: 0, in_progress: 0, in_review: 0, needs_revision: 0, done: 0, cancelled: 0 }
+    const overdue = mockTasks.filter(t => t.due_date && new Date(t.due_date) < now && t.status !== 'done' && t.status !== 'cancelled').length
+    mockTasks.forEach(t => { byStatus[t.status] = (byStatus[t.status] || 0) + 1 })
+    return delay({ total, byStatus, overdue })
+  },
+  getMyStats: (userId: number, branchId?: number) => {
+    const myTasks = mockTasks.filter(t =>
+      t.status !== 'cancelled' && (
+        t.assigned_to.includes(userId) ||
+        (branchId && t.scope === 'branch' && t.assigned_branch_id === branchId)
+      )
+    )
+    const byStatus: Record<string, number> = { todo: 0, in_progress: 0, in_review: 0, needs_revision: 0, done: 0 }
+    myTasks.forEach(t => { if (byStatus[t.status] !== undefined) byStatus[t.status]++ })
+    const overdue = myTasks.filter(t => t.due_date && new Date(t.due_date) < now && t.status !== 'done').length
+    return delay({ total: myTasks.length, byStatus, overdue })
+  },
+} : {
+  getAll: () => client.get<ApiResponse<Task[]>>('/index.php?endpoint=tasks').then(r => r.data),
+  getOne: (id: number) => client.get<ApiResponse<Task>>(`/index.php?endpoint=tasks&id=${id}`).then(r => r.data),
+  create: (data: TaskForm) => client.post<ApiResponse<Task>>('/index.php?endpoint=tasks', data).then(r => r.data),
+  update: (id: number, data: Partial<TaskForm>) => client.put<ApiResponse<Task>>(`/index.php?endpoint=tasks&id=${id}`, data).then(r => r.data),
+  updateStatus: (id: number, status: Task['status']) => client.patch<ApiResponse<Task>>(`/index.php?endpoint=tasks&id=${id}&action=status`, { status }).then(r => r.data),
+  toggleSubtask: (taskId: number, subtaskId: string) => client.patch<ApiResponse<Task>>(`/index.php?endpoint=tasks&id=${taskId}&action=subtask`, { subtask_id: subtaskId }).then(r => r.data),
+  addComment: (taskId: number, body: string) => client.post<ApiResponse<TaskComment>>(`/index.php?endpoint=tasks&id=${taskId}&action=comment`, { body }).then(r => r.data),
+  delegate: (id: number, userIds: number[], userNames: string[], note?: string) => client.patch<ApiResponse<Task>>(`/index.php?endpoint=tasks&id=${id}&action=delegate`, { user_ids: userIds, user_names: userNames, note }).then(r => r.data),
+  addProgressNote: (id: number, note: string) => client.patch<ApiResponse<Task>>(`/index.php?endpoint=tasks&id=${id}&action=progress_note`, { note }).then(r => r.data),
+  submitForReview: (id: number, achievement_summary?: string, key_outcomes?: string[], challenges_faced?: string, revision_response?: string, taggedReviewers?: number[]) => client.patch<ApiResponse<Task>>(`/index.php?endpoint=tasks&id=${id}&action=submit`, { achievement_summary, key_outcomes, challenges_faced, revision_response, tagged_reviewers: taggedReviewers }).then(r => r.data),
+  approve: (id: number) => client.patch<ApiResponse<Task>>(`/index.php?endpoint=tasks&id=${id}&action=approve`).then(r => r.data),
+  reject: (id: number, reason: string) => client.patch<ApiResponse<Task>>(`/index.php?endpoint=tasks&id=${id}&action=reject`, { reason }).then(r => r.data),
+  resubmit: (id: number, achievement_summary?: string, key_outcomes?: string[], challenges_faced?: string, revision_response?: string) => client.patch<ApiResponse<Task>>(`/index.php?endpoint=tasks&id=${id}&action=resubmit`, { achievement_summary, key_outcomes, challenges_faced, revision_response }).then(r => r.data),
+  getMyTasks: (userId: number, branchId?: number) => client.get<ApiResponse<Task[]>>(`/index.php?endpoint=tasks&action=my&user_id=${userId}&branch_id=${branchId ?? ''}`).then(r => r.data),
+  getManagerTasks: (managerId: number, branchId: number) => client.get<ApiResponse<Task[]>>(`/index.php?endpoint=tasks&action=manager&manager_id=${managerId}&branch_id=${branchId}`).then(r => r.data),
+  delete: (id: number) => client.delete<ApiResponse<null>>(`/index.php?endpoint=tasks&id=${id}`).then(r => r.data),
+  getStats: () => client.get<ApiResponse<{ total: number; byStatus: Record<string, number>; overdue: number }>>('/index.php?endpoint=tasks&action=stats').then(r => r.data),
+  getMyStats: (userId: number, branchId?: number) => client.get<ApiResponse<{ total: number; byStatus: Record<string, number>; overdue: number }>>(`/index.php?endpoint=tasks&action=my_stats&user_id=${userId}&branch_id=${branchId ?? ''}`).then(r => r.data),
+}
+
+// ─── Notifications API ────────────────────────────────────────────────────────
+
+export const notificationsApi = MOCK ? {
+  getAll: () => delay([...mockNotifications]),
+  markRead: (id: number) => {
+    const idx = mockNotifications.findIndex(n => n.id === id)
+    if (idx !== -1) mockNotifications[idx].read = true
+    return delay(null)
+  },
+  markAllRead: () => {
+    mockNotifications = mockNotifications.map(n => ({ ...n, read: true }))
+    return delay(null)
+  },
+  getUnreadCount: () => delay(mockNotifications.filter(n => !n.read).length),
+} : {
+  getAll: () => client.get<ApiResponse<Notification[]>>('/index.php?endpoint=notifications').then(r => r.data),
+  markRead: (id: number) => client.patch<ApiResponse<null>>(`/index.php?endpoint=notifications&id=${id}&action=read`).then(r => r.data),
+  markAllRead: () => client.patch<ApiResponse<null>>('/index.php?endpoint=notifications&action=read_all').then(r => r.data),
+  getUnreadCount: () => client.get<ApiResponse<number>>('/index.php?endpoint=notifications&action=count').then(r => r.data),
+}
 
 // ── Staff API (for logged-in staff member's own experience) ─────
 export const staffApi = MOCK ? {

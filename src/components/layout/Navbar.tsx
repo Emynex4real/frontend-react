@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import NotificationDropdown from './NotificationDropdown';
 
 interface NavbarProps {
   collapsed: boolean;
@@ -170,24 +171,7 @@ export default function Navbar({ collapsed, isMobile, onToggle }: NavbarProps) {
 
         <div className="d-flex align-items-center gap-2" style={{ flexShrink: 0 }}>
           {/* Notifications */}
-          <button
-            className="btn vision-icon-btn position-relative p-0"
-            style={{ border: 'none' }}
-          >
-            <i className="bi bi-bell" style={{ fontSize: 18 }} />
-            <span
-              className="position-absolute"
-              style={{ 
-                top: 8, 
-                right: 8, 
-                width: 8, 
-                height: 8, 
-                background: '#F97316', 
-                borderRadius: '50%',
-                border: '2px solid #FFF'
-              }}
-            />
-          </button>
+          <NotificationDropdown />
 
           <div style={{ width: 1, height: 24, background: 'rgba(0,0,0,0.06)', margin: '0 4px' }} />
 

@@ -27,6 +27,11 @@ import AssignedReportsPage from './pages/staff/AssignedReportsPage'
 import MySubmissionsPage from './pages/staff/MySubmissionsPage'
 import ResubmitEntryPage from './pages/staff/ResubmitEntryPage'
 
+// Task Manager
+import TasksPage from './pages/tasks/TasksPage'
+import ManagerTasksPage from './pages/tasks/ManagerTasksPage'
+import MyTasksPage from './pages/tasks/MyTasksPage'
+
 // Branch Manager pages
 import ManagerDashboardPage from './pages/manager/ManagerDashboardPage'
 import ManagerTemplatesPage from './pages/manager/ManagerTemplatesPage'
@@ -75,6 +80,7 @@ export default function App() {
         <Route path="/entries/:id"         element={<EntryViewPage />} />
         <Route path="/submissions"         element={<SubmissionsPage />} />
         <Route path="/submissions/:id"     element={<SubmissionDetailPage />} />
+        <Route path="/tasks"               element={<TasksPage />} />
 
         {/* ── Branch Manager pages ── */}
         <Route path="/manager"                          element={<ManagerDashboardPage />} />
@@ -83,8 +89,10 @@ export default function App() {
         <Route path="/manager/submissions"             element={<ManagerSubmissionsPage />} />
         <Route path="/manager/submissions/:id"         element={<ManagerSubmissionDetailPage />} />
         <Route path="/manager/team"                    element={<ManagerTeamPage />} />
+        <Route path="/manager/tasks"                   element={<ManagerTasksPage />} />
 
         {/* ── Staff pages (also visible to manager for their own reports) ── */}
+        <Route path="/my-tasks"                        element={<MyTasksPage />} />
         <Route path="/my-reports"                      element={<AssignedReportsPage />} />
         <Route path="/my-submissions"                  element={<MySubmissionsPage />} />
         <Route path="/my-submissions/:id/resubmit"     element={<ResubmitEntryPage />} />

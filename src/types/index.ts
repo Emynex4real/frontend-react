@@ -227,3 +227,137 @@ export type Permission =
   | 'submit_reports'
   | 'approve_reports'
   | 'export_data'
+
+// ─── Task Manager ────────────────────────────────────────────────────────────
+
+export type TaskType = 'general' | 'compliance' | 'operations' | 'hr' | 'finance' | 'it' | 'sales'
+export type TaskStatus = 'backlog' | 'todo' | 'in_progress' | 'in_review' | 'needs_revision' | 'done' | 'cancelled'
+export type TaskPriority = 'critical' | 'high' | 'medium' | 'low'
+export type TaskScope = 'individual' | 'branch'
+
+export interface SubTask {
+  id: string
+  title: string
+  completed: boolean
+  assigned_to?: number
+  assigned_name?: string
+}
+
+export interface TaskComment {
+  id: number
+  task_id: number
+  author_id: number
+  author_name: string
+  author_role: string
+  body: string
+  created_at: string
+}
+
+export interface TaskActivity {
+  id: number
+  task_id: number
+  actor_id: number
+  actor_name: string
+  action: 'created' | 'status_changed' | 'assigned' | 'commented' | 'priority_changed' | 'due_date_changed' | 'subtask_completed' | 'edited'
+  from_value?: string
+  to_value?: string
+  created_at: string
+}
+
+export interface Task {
+  id: number
+  title: string
+  description?: string
+  type: TaskType
+  status: TaskStatus
+  priority: TaskPriority
+  scope: TaskScope
+
+  assigned_to: number[]
+  assignee_names?: string[]
+  assigned_branch_id?: number
+  assigned_branch_name?: string
+
+  due_date?: string
+  start_date?: string
+  labels: string[]
+
+  subtasks: SubTask[]
+  comments: TaskComment[]
+  activity: TaskActivity[]
+
+  // Delegation — manager can delegate a task assigned to them down to branch staff
+  delegated_to?: number[]         // user IDs the manager delegated this task to
+  delegated_names?: string[]      // display names of delegatees
+  delegate_note?: string          // instruction from manager to delegatees
+  delegated_at?: string
+
+  // Progress — manager logs updates while task is in_progress
+  progress_note?: string
+  progress_note_at?: string
+  progress_note_author?: string
+
+  // Workflow fields
+  submission_note?: string        // kept for backward compat (legacy)
+  revision_reason?: string        // reason written by reviewer when rejecting
+  tagged_reviewers?: number[]
+  tagged_reviewer_names?: string[]
+
+  // Structured achievement report (filled on submit/resubmit)
+  achievement_summary?: string    // required: overall what was accomplished
+  key_outcomes?: string[]         // required: at least 1 bullet outcome
+  challenges_faced?: string       // optional: blockers / issues
+  revision_response?: string      // only on resubmit: how feedback was addressed
+
+  created_by: number
+  creator_name?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface TaskForm {
+  title: string
+  description?: string
+  type: TaskType
+  priority: TaskPriority
+  scope: TaskScope
+  assigned_to: number[]
+  assigned_branch_id?: number
+  due_date?: string
+  start_date?: string
+  labels: string[]
+  subtasks: { title: string; completed: boolean }[]
+}
+
+export interface TaskFilter {
+  status?: TaskStatus | ''
+  priority?: TaskPriority | ''
+  type?: TaskType | ''
+  scope?: TaskScope | ''
+  assigned_to?: number
+  assigned_branch_id?: number
+  search?: string
+}
+
+// ─── Notifications ────────────────────────────────────────────────────────────
+
+export type NotificationType =
+  | 'task_assigned'
+  | 'task_updated'
+  | 'task_comment'
+  | 'task_overdue'
+  | 'report_submitted'
+  | 'report_approved'
+  | 'report_rejected'
+
+export interface Notification {
+  id: number
+  user_id: number
+  title: string
+  body: string
+  type: NotificationType
+  reference_id?: number
+  reference_type?: 'task' | 'submission'
+  read: boolean
+  created_at: string
+}
