@@ -235,6 +235,17 @@ export type TaskStatus = 'backlog' | 'todo' | 'in_progress' | 'in_review' | 'nee
 export type TaskPriority = 'critical' | 'high' | 'medium' | 'low'
 export type TaskScope = 'individual' | 'branch'
 
+export interface TaskAttachment {
+  id: string
+  name: string
+  size: number           // bytes
+  type: string           // MIME type e.g. 'image/png'
+  url: string            // object URL (mock) or server URL
+  uploaded_by: number
+  uploader_name: string
+  uploaded_at: string
+}
+
 export interface SubTask {
   id: string
   title: string
@@ -296,6 +307,9 @@ export interface Task {
   progress_note?: string
   progress_note_at?: string
   progress_note_author?: string
+
+  // File attachments (uploaded while working or at submission)
+  attachments?: TaskAttachment[]
 
   // Workflow fields
   submission_note?: string        // kept for backward compat (legacy)

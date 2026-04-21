@@ -4,7 +4,7 @@ import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-p
 import { formatDistanceToNow, format, isPast, isToday } from 'date-fns'
 import { tasksApi, usersApi, branchesApi } from '../../services/api'
 import { useAuth } from '../../context/AuthContext'
-import type { Task, TaskStatus, TaskPriority, TaskType, SubTask } from '../../types'
+import type { Task, TaskStatus, TaskPriority, TaskType, SubTask, TaskAttachment } from '../../types'
 import CreateTaskModal from '../../components/tasks/CreateTaskModal'
 import ReviewActionModal from '../../components/tasks/ReviewActionModal'
 import SubmitForReviewModal from '../../components/tasks/SubmitForReviewModal'
@@ -34,6 +34,22 @@ const TYPE_ICONS: Record<TaskType, string> = {
 }
 
 const AVATAR_COLORS = ['#F97316', '#3B82F6', '#10B981', '#8B5CF6', '#EC4899', '#EF4444']
+
+function getFileStyle(type: string, name: string): { icon: string; color: string; bg: string } {
+  if (type.startsWith('image/')) return { icon: 'bi-file-image', color: '#EC4899', bg: '#FDF2F8' }
+  if (type.startsWith('video/')) return { icon: 'bi-camera-video', color: '#8B5CF6', bg: '#F5F3FF' }
+  if (type === 'application/pdf' || name.endsWith('.pdf')) return { icon: 'bi-file-earmark-text', color: '#EF4444', bg: '#FEF2F2' }
+  if (type.includes('word') || name.endsWith('.doc') || name.endsWith('.docx')) return { icon: 'bi-file-earmark-text', color: '#3B82F6', bg: '#EFF6FF' }
+  if (type.includes('excel') || type.includes('spreadsheet') || name.endsWith('.xls') || name.endsWith('.xlsx')) return { icon: 'bi-file-earmark-text', color: '#10B981', bg: '#ECFDF5' }
+  if (type.includes('powerpoint') || type.includes('presentation') || name.endsWith('.ppt') || name.endsWith('.pptx')) return { icon: 'bi-file-earmark-text', color: '#F97316', bg: '#FFF7ED' }
+  return { icon: 'bi-file-earmark', color: '#71717A', bg: '#F4F4F5' }
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / 1048576).toFixed(1)} MB`
+}
 
 function Avatar({ name, size = 26, index = 0 }: { name: string; size?: number; index?: number }) {
   const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
@@ -276,6 +292,45 @@ function ManagerDetailPanel({ task, onClose, onApprove, onReject, onToggleSubtas
                       <p style={{ fontSize: 13, color: '#3F3F46', margin: 0, lineHeight: 1.6 }}>{task.revision_response}</p>
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* Attached Evidence — shown to manager reviewer */}
+              {(task.attachments ?? []).length > 0 && (
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#52525B', textTransform: 'uppercase', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <i className="bi bi-paperclip" style={{ color: '#F97316', fontSize: 13 }} />
+                    Attached Evidence
+                    <span style={{ background: '#F97316', color: '#fff', borderRadius: 20, padding: '0 6px', fontSize: 10, fontWeight: 800 }}>{(task.attachments ?? []).length}</span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {(task.attachments ?? []).map((att: TaskAttachment) => {
+                      const fs = getFileStyle(att.type, att.name)
+                      const isImage = att.type.startsWith('image/')
+                      return (
+                        <div key={att.id} style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#FAFAFA', border: '1px solid rgba(0,0,0,0.07)', borderRadius: 10, padding: '10px 12px' }}>
+                          {isImage && att.url !== '#' ? (
+                            <img src={att.url} alt={att.name} style={{ width: 40, height: 40, borderRadius: 8, objectFit: 'cover', flexShrink: 0, border: '1px solid rgba(0,0,0,0.08)' }} />
+                          ) : (
+                            <div style={{ width: 40, height: 40, borderRadius: 8, background: fs.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                              <i className={`bi ${fs.icon}`} style={{ fontSize: 18, color: fs.color }} />
+                            </div>
+                          )}
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 12, fontWeight: 600, color: '#09090B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{att.name}</div>
+                            <div style={{ fontSize: 10, color: '#A1A1AA', marginTop: 2 }}>
+                              {formatBytes(att.size)} · {att.uploader_name} · {formatDistanceToNow(new Date(att.uploaded_at), { addSuffix: true })}
+                            </div>
+                          </div>
+                          {att.url !== '#' && (
+                            <a href={att.url} download={att.name} target="_blank" rel="noreferrer" style={{ width: 30, height: 30, borderRadius: 7, background: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', flexShrink: 0 }} title="Download">
+                              <i className="bi bi-download" style={{ fontSize: 12, color: '#3B82F6' }} />
+                            </a>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
                 </div>
               )}
 

@@ -1,5 +1,25 @@
-import { useState } from 'react'
-import type { Task, SubTask } from '../../types'
+import { useState, useMemo, useRef } from 'react'
+import type { Task, SubTask, User, TaskAttachment } from '../../types'
+
+const ACCEPTED_TYPES = 'image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv'
+const MAX_FILE_SIZE = 20 * 1024 * 1024
+const MAX_FILES = 5
+
+function getFileStyle(type: string, name: string): { icon: string; color: string; bg: string } {
+  if (type.startsWith('image/')) return { icon: 'bi-file-image', color: '#EC4899', bg: '#FDF2F8' }
+  if (type.startsWith('video/')) return { icon: 'bi-camera-video', color: '#8B5CF6', bg: '#F5F3FF' }
+  if (type === 'application/pdf' || name.endsWith('.pdf')) return { icon: 'bi-file-earmark-text', color: '#EF4444', bg: '#FEF2F2' }
+  if (type.includes('word') || name.endsWith('.doc') || name.endsWith('.docx')) return { icon: 'bi-file-earmark-text', color: '#3B82F6', bg: '#EFF6FF' }
+  if (type.includes('excel') || type.includes('spreadsheet') || name.endsWith('.xls') || name.endsWith('.xlsx')) return { icon: 'bi-file-earmark-text', color: '#10B981', bg: '#ECFDF5' }
+  if (type.includes('powerpoint') || type.includes('presentation') || name.endsWith('.ppt') || name.endsWith('.pptx')) return { icon: 'bi-file-earmark-text', color: '#F97316', bg: '#FFF7ED' }
+  return { icon: 'bi-file-earmark', color: '#71717A', bg: '#F4F4F5' }
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / 1048576).toFixed(1)} MB`
+}
 
 interface Props {
   task: Task
@@ -10,11 +30,16 @@ interface Props {
     key_outcomes: string[],
     challenges_faced: string,
     revision_response: string,
+    taggedReviewers: number[],
   ) => void
   isPending: boolean
+  users?: User[]
+  onUploadFile?: (file: File) => Promise<void>
+  isUploadingFile?: boolean
+  onRemoveAttachment?: (attachmentId: string) => void
 }
 
-export default function SubmitForReviewModal({ task, mode, onClose, onSubmit, isPending }: Props) {
+export default function SubmitForReviewModal({ task, mode, onClose, onSubmit, isPending, users, onUploadFile, isUploadingFile, onRemoveAttachment }: Props) {
   const [summary, setSummary] = useState(task.achievement_summary ?? '')
   const [outcomes, setOutcomes] = useState<string[]>(
     task.key_outcomes?.length ? task.key_outcomes : ['']
@@ -22,6 +47,34 @@ export default function SubmitForReviewModal({ task, mode, onClose, onSubmit, is
   const [challenges, setChallenges] = useState(task.challenges_faced ?? '')
   const [revisionResponse, setRevisionResponse] = useState(task.revision_response ?? '')
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [tagSearch, setTagSearch] = useState('')
+  const [taggedIds, setTaggedIds] = useState<number[]>(task.tagged_reviewers ?? [])
+  const [isDragModal, setIsDragModal] = useState(false)
+  const [fileUploadError, setFileUploadError] = useState('')
+  const modalFileRef = useRef<HTMLInputElement>(null)
+
+  const filteredTagUsers = useMemo(() => {
+    if (!tagSearch.trim() || !users?.length) return []
+    return users.filter(u =>
+      !taggedIds.includes(u.id) &&
+      u.full_name.toLowerCase().includes(tagSearch.toLowerCase())
+    ).slice(0, 6)
+  }, [tagSearch, users, taggedIds])
+
+  const addTag = (user: User) => { setTaggedIds(prev => [...prev, user.id]); setTagSearch('') }
+  const removeTag = (id: number) => setTaggedIds(prev => prev.filter(x => x !== id))
+
+  const handleModalFiles = async (files: FileList | null) => {
+    if (!files || !onUploadFile) return
+    setFileUploadError('')
+    const currentCount = (task.attachments ?? []).length
+    const available = MAX_FILES - currentCount
+    if (available <= 0) { setFileUploadError(`Maximum ${MAX_FILES} files already attached.`); return }
+    for (const file of Array.from(files).slice(0, available)) {
+      if (file.size > MAX_FILE_SIZE) { setFileUploadError(`"${file.name}" exceeds the 20 MB limit.`); return }
+      await onUploadFile(file)
+    }
+  }
 
   const completedSubs = task.subtasks.filter((s: SubTask) => s.completed)
   const pendingSubs   = task.subtasks.filter((s: SubTask) => !s.completed)
@@ -41,7 +94,7 @@ export default function SubmitForReviewModal({ task, mode, onClose, onSubmit, is
     if (filledOutcomes.length === 0) errs.outcomes = 'Add at least one key outcome.'
     if (mode === 'resubmit' && !revisionResponse.trim()) errs.revisionResponse = 'Explain how you addressed the previous feedback.'
     if (Object.keys(errs).length) { setErrors(errs); return }
-    onSubmit(summary.trim(), filledOutcomes, challenges.trim(), revisionResponse.trim())
+    onSubmit(summary.trim(), filledOutcomes, challenges.trim(), revisionResponse.trim(), taggedIds)
   }
 
   const accentColor = mode === 'resubmit' ? '#F97316' : '#8B5CF6'
@@ -225,6 +278,173 @@ export default function SubmitForReviewModal({ task, mode, onClose, onSubmit, is
                 onFocus={e => { e.target.style.borderColor = accentColor; e.target.style.boxShadow = `0 0 0 3px ${accentColor}18` }}
                 onBlur={e => { e.target.style.borderColor = 'rgba(0,0,0,0.1)'; e.target.style.boxShadow = 'none' }}
               />
+            </div>
+
+            {/* Evidence Files */}
+            <div>
+              <label className="sfr2-field-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <i className="bi bi-paperclip" style={{ color: accentColor }} />
+                Evidence Files
+                <span style={{ fontSize: 10, color: '#A1A1AA', fontWeight: 400, textTransform: 'none' }}>(optional)</span>
+              </label>
+              <p style={{ fontSize: 12, color: '#71717A', margin: '0 0 10px', lineHeight: 1.5 }}>
+                Attach screenshots, reports, spreadsheets or videos as proof of your work. Visible to the reviewer and tagged colleagues.
+              </p>
+
+              {/* Existing attached files */}
+              {(task.attachments ?? []).length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
+                  {(task.attachments ?? []).map((att: TaskAttachment) => {
+                    const fs = getFileStyle(att.type, att.name)
+                    const isImage = att.type.startsWith('image/')
+                    return (
+                      <div key={att.id} style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#FAFAFA', border: '1px solid rgba(0,0,0,0.07)', borderRadius: 10, padding: '9px 12px' }}>
+                        {isImage && att.url !== '#' ? (
+                          <img src={att.url} alt={att.name} style={{ width: 36, height: 36, borderRadius: 7, objectFit: 'cover', flexShrink: 0 }} />
+                        ) : (
+                          <div style={{ width: 36, height: 36, borderRadius: 7, background: fs.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <i className={`bi ${fs.icon}`} style={{ fontSize: 16, color: fs.color }} />
+                          </div>
+                        )}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: '#09090B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{att.name}</div>
+                          <div style={{ fontSize: 10, color: '#A1A1AA', marginTop: 2 }}>{formatBytes(att.size)} · {att.uploader_name}</div>
+                        </div>
+                        <div style={{ display: 'flex', gap: 5, flexShrink: 0 }}>
+                          {att.url !== '#' && (
+                            <a href={att.url} download={att.name} target="_blank" rel="noreferrer" style={{ width: 28, height: 28, borderRadius: 7, background: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }} title="Download">
+                              <i className="bi bi-download" style={{ fontSize: 11, color: '#3B82F6' }} />
+                            </a>
+                          )}
+                          {onRemoveAttachment && (
+                            <button type="button" onClick={() => onRemoveAttachment(att.id)} style={{ width: 28, height: 28, borderRadius: 7, background: '#FEF2F2', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Remove">
+                              <i className="bi bi-x-lg" style={{ fontSize: 11, color: '#EF4444' }} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+
+              {/* Upload zone — only if onUploadFile provided and slots remain */}
+              {onUploadFile && (task.attachments ?? []).length < MAX_FILES && (
+                <>
+                  <div
+                    onDragOver={e => { e.preventDefault(); setIsDragModal(true) }}
+                    onDragLeave={() => setIsDragModal(false)}
+                    onDrop={e => { e.preventDefault(); setIsDragModal(false); handleModalFiles(e.dataTransfer.files) }}
+                    onClick={() => modalFileRef.current?.click()}
+                    style={{ border: `2px dashed ${isDragModal ? accentColor : 'rgba(0,0,0,0.12)'}`, borderRadius: 10, padding: '16px', textAlign: 'center', cursor: 'pointer', background: isDragModal ? accentBg : '#FAFAFA', transition: 'all 0.15s' }}
+                  >
+                    {isUploadingFile ? (
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 13, color: '#71717A' }}>
+                        <span className="spinner-border spinner-border-sm" />Uploading...
+                      </div>
+                    ) : (
+                      <>
+                        <i className="bi bi-cloud-upload" style={{ fontSize: 22, color: isDragModal ? accentColor : '#A1A1AA', display: 'block', marginBottom: 6 }} />
+                        <div style={{ fontSize: 12, fontWeight: 600, color: isDragModal ? accentColor : '#52525B' }}>
+                          Drop files here or <span style={{ color: accentColor, textDecoration: 'underline' }}>browse</span>
+                        </div>
+                        <div style={{ fontSize: 11, color: '#A1A1AA', marginTop: 3 }}>
+                          Images · Videos · PDF · Word · Excel &nbsp;·&nbsp; Max 20 MB · {MAX_FILES - (task.attachments ?? []).length} slot{MAX_FILES - (task.attachments ?? []).length !== 1 ? 's' : ''} left
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  <input ref={modalFileRef} type="file" multiple accept={ACCEPTED_TYPES} style={{ display: 'none' }} onChange={e => { handleModalFiles(e.target.files); e.target.value = '' }} />
+                </>
+              )}
+
+              {(task.attachments ?? []).length >= MAX_FILES && (
+                <div style={{ fontSize: 12, color: '#71717A', background: '#F4F4F5', borderRadius: 8, padding: '8px 12px' }}>
+                  <i className="bi bi-check-circle-fill" style={{ color: '#10B981', marginRight: 6 }} />
+                  {MAX_FILES} files attached — limit reached.
+                </div>
+              )}
+
+              {fileUploadError && (
+                <div style={{ marginTop: 8, fontSize: 12, color: '#EF4444', display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <i className="bi bi-exclamation-triangle-fill" />{fileUploadError}
+                </div>
+              )}
+            </div>
+
+            {/* Tag Colleagues */}
+            <div>
+              <label className="sfr2-field-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <i className="bi bi-at" style={{ color: accentColor }} />
+                Tag Colleagues
+                <span style={{ fontSize: 10, color: '#A1A1AA', fontWeight: 400, textTransform: 'none' }}>(optional)</span>
+              </label>
+              <p style={{ fontSize: 12, color: '#71717A', margin: '0 0 10px', lineHeight: 1.5 }}>
+                Tag people you want to see this task and your work submission. They'll be notified and can view your report.
+              </p>
+              {taggedIds.length > 0 && (
+                <div className="d-flex flex-wrap gap-2" style={{ marginBottom: 10 }}>
+                  {taggedIds.map(id => {
+                    const u = (users ?? []).find(x => x.id === id)
+                    if (!u) return null
+                    return (
+                      <span key={id} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#fff', background: accentColor, padding: '4px 8px 4px 6px', borderRadius: 20 }}>
+                        <div style={{ width: 18, height: 18, borderRadius: '50%', background: 'rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, fontWeight: 800 }}>
+                          {u.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                        </div>
+                        {u.full_name}
+                        <button type="button" onClick={() => removeTag(id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.8)', padding: 0, lineHeight: 1, display: 'flex', alignItems: 'center' }}>
+                          <i className="bi bi-x" />
+                        </button>
+                      </span>
+                    )
+                  })}
+                </div>
+              )}
+              <div style={{ position: 'relative' }}>
+                <div style={{ display: 'flex', alignItems: 'center', border: '1.5px solid rgba(0,0,0,0.1)', borderRadius: 10, padding: '8px 12px', background: '#FAFAFA', gap: 6 }}>
+                  <i className="bi bi-at" style={{ color: '#A1A1AA', fontSize: 15 }} />
+                  <input
+                    type="text"
+                    value={tagSearch}
+                    onChange={e => setTagSearch(e.target.value)}
+                    placeholder="Search by name..."
+                    style={{ border: 'none', outline: 'none', flex: 1, fontSize: 13, background: 'transparent', fontFamily: 'inherit' }}
+                  />
+                  {tagSearch && (
+                    <button type="button" onClick={() => setTagSearch('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#A1A1AA', padding: 0, lineHeight: 1, display: 'flex' }}>
+                      <i className="bi bi-x" />
+                    </button>
+                  )}
+                </div>
+                {tagSearch.trim().length > 0 && (
+                  <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, background: '#fff', border: '1px solid rgba(0,0,0,0.1)', borderRadius: 10, boxShadow: '0 4px 16px rgba(0,0,0,0.1)', zIndex: 20, overflow: 'hidden' }}>
+                    {filteredTagUsers.length > 0 ? filteredTagUsers.map(u => (
+                      <button
+                        key={u.id}
+                        type="button"
+                        onClick={() => addTag(u)}
+                        style={{ width: '100%', padding: '9px 12px', border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, textAlign: 'left' }}
+                        onMouseEnter={e => (e.currentTarget.style.background = '#F4F4F5')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                      >
+                        <div style={{ width: 30, height: 30, borderRadius: '50%', background: `${accentColor}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: accentColor, flexShrink: 0 }}>
+                          {u.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                        </div>
+                        <div style={{ flex: 1, textAlign: 'left' }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: '#09090B' }}>{u.full_name}</div>
+                          <div style={{ fontSize: 11, color: '#71717A' }}>{u.role_name} · {u.branch_name ?? '—'}</div>
+                        </div>
+                        <i className="bi bi-plus-circle" style={{ color: accentColor, fontSize: 14 }} />
+                      </button>
+                    )) : (
+                      <div style={{ padding: '12px 16px', fontSize: 12, color: '#A1A1AA', textAlign: 'center' }}>
+                        No users found for "{tagSearch}"
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* 4 — Revision Response (resubmit only) */}

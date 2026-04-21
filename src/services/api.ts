@@ -9,7 +9,7 @@ import type {
   ReportEntry, ReportEntryForm,
   AuthUser, LoginCredentials,
   DashboardStats, SubmissionReviewAction,
-  Task, TaskForm, TaskComment, SubTask,
+  Task, TaskForm, TaskComment, SubTask, TaskAttachment,
   Notification,
 } from '../types'
 
@@ -534,6 +534,9 @@ let mockTasks: Task[] = [
       { id: 2, task_id: 1, actor_id: 1, actor_name: 'Admin User', action: 'assigned', to_value: 'John Doe, Ana Cruz', created_at: daysAgo(5) },
       { id: 3, task_id: 1, actor_id: 2, actor_name: 'John Doe', action: 'status_changed', from_value: 'todo', to_value: 'in_progress', created_at: daysAgo(4) },
     ],
+    attachments: [
+      { id: 'att_demo_1a', name: 'compliance_checklist_Q2.pdf', size: 312400, type: 'application/pdf', url: '#', uploaded_by: 2, uploader_name: 'John Doe', uploaded_at: daysAgo(2) },
+    ],
     created_by: 1, creator_name: 'Admin User', created_at: daysAgo(5), updated_at: daysAgo(1),
   },
   {
@@ -572,6 +575,11 @@ let mockTasks: Task[] = [
     activity: [
       { id: 1, task_id: 3, actor_id: 1, actor_name: 'Admin User', action: 'created', created_at: daysAgo(6) },
       { id: 2, task_id: 3, actor_id: 2, actor_name: 'John Doe', action: 'status_changed', from_value: 'in_progress', to_value: 'in_review', created_at: daysAgo(1) },
+    ],
+    tagged_reviewers: [3, 5], tagged_reviewer_names: ['Mary Smith', 'Ben Santos'],
+    attachments: [
+      { id: 'att_demo_3a', name: 'sales_summary_draft.pdf', size: 245760, type: 'application/pdf', url: '#', uploaded_by: 2, uploader_name: 'John Doe', uploaded_at: daysAgo(1) },
+      { id: 'att_demo_3b', name: 'branch_comparison_chart.xlsx', size: 89600, type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', url: '#', uploaded_by: 2, uploader_name: 'John Doe', uploaded_at: daysAgo(1) },
     ],
     created_by: 1, creator_name: 'Admin User', created_at: daysAgo(6), updated_at: daysAgo(1),
   },
@@ -875,6 +883,18 @@ export const tasksApi = MOCK ? {
         type: 'task_updated', reference_id: id, reference_type: 'task', read: false,
         created_at: new Date().toISOString(),
       })
+      // Notify tagged reviewers
+      ;(taggedReviewers ?? []).forEach(uid => {
+        if (uid !== mockTasks[idx].created_by && uid !== _mockSession.id) {
+          mockNotifications.unshift({
+            id: Date.now() + uid, user_id: uid,
+            title: 'You Were Tagged on a Task',
+            body: `${_mockSession.full_name} tagged you on "${mockTasks[idx].title}" and submitted it for review.`,
+            type: 'task_updated', reference_id: id, reference_type: 'task', read: false,
+            created_at: new Date().toISOString(),
+          })
+        }
+      })
     }
     return delay(mockTasks[idx])
   },
@@ -927,9 +947,64 @@ export const tasksApi = MOCK ? {
     }
     return delay(mockTasks[idx])
   },
-  resubmit: (id: number, achievement_summary?: string, key_outcomes?: string[], challenges_faced?: string, revision_response?: string) => {
+  tagColleagues: (id: number, userIds: number[], userNames: string[]) => {
     const idx = mockTasks.findIndex(t => t.id === id)
     if (idx !== -1) {
+      mockTasks[idx] = { ...mockTasks[idx], tagged_reviewers: userIds, tagged_reviewer_names: userNames, updated_at: new Date().toISOString() }
+      userIds.forEach(uid => {
+        if (uid !== _mockSession.id) {
+          mockNotifications.unshift({
+            id: Date.now() + uid, user_id: uid,
+            title: 'You Were Tagged on a Task',
+            body: `${_mockSession.full_name} tagged you on "${mockTasks[idx].title}" — they want you to see their progress.`,
+            type: 'task_assigned', reference_id: id, reference_type: 'task', read: false,
+            created_at: new Date().toISOString(),
+          })
+        }
+      })
+    }
+    return delay(mockTasks[idx])
+  },
+  uploadAttachment: (taskId: number, file: File) => {
+    const idx = mockTasks.findIndex(t => t.id === taskId)
+    const attachment: TaskAttachment = {
+      id: `att_${Date.now()}`,
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      url: (file.type.startsWith('image/') || file.type.startsWith('video/'))
+        ? URL.createObjectURL(file)
+        : '#',
+      uploaded_by: _mockSession.id,
+      uploader_name: _mockSession.full_name,
+      uploaded_at: new Date().toISOString(),
+    }
+    if (idx !== -1) {
+      mockTasks[idx] = {
+        ...mockTasks[idx],
+        attachments: [...(mockTasks[idx].attachments ?? []), attachment],
+        updated_at: new Date().toISOString(),
+      }
+    }
+    return delay(mockTasks[idx])
+  },
+  removeAttachment: (taskId: number, attachmentId: string) => {
+    const idx = mockTasks.findIndex(t => t.id === taskId)
+    if (idx !== -1) {
+      mockTasks[idx] = {
+        ...mockTasks[idx],
+        attachments: (mockTasks[idx].attachments ?? []).filter(a => a.id !== attachmentId),
+        updated_at: new Date().toISOString(),
+      }
+    }
+    return delay(mockTasks[idx])
+  },
+  resubmit: (id: number, achievement_summary?: string, key_outcomes?: string[], challenges_faced?: string, revision_response?: string, taggedReviewers?: number[]) => {
+    const idx = mockTasks.findIndex(t => t.id === id)
+    if (idx !== -1) {
+      const taggedNames = taggedReviewers
+        ? taggedReviewers.map(uid => mockUsers.find(u => u.id === uid)?.full_name ?? `User ${uid}`)
+        : (mockTasks[idx].tagged_reviewer_names ?? [])
       mockTasks[idx] = {
         ...mockTasks[idx],
         status: 'in_review',
@@ -939,6 +1014,8 @@ export const tasksApi = MOCK ? {
         revision_response,
         submission_note: achievement_summary,
         revision_reason: undefined,
+        tagged_reviewers: taggedReviewers ?? mockTasks[idx].tagged_reviewers ?? [],
+        tagged_reviewer_names: taggedNames,
         updated_at: new Date().toISOString(),
       }
       mockTasks[idx].activity.push({
@@ -962,7 +1039,8 @@ export const tasksApi = MOCK ? {
       t.status !== 'cancelled' && (
         t.assigned_to.includes(userId) ||
         (branchId && t.scope === 'branch' && t.assigned_branch_id === branchId) ||
-        (t.delegated_to ?? []).includes(userId)
+        (t.delegated_to ?? []).includes(userId) ||
+        (t.tagged_reviewers ?? []).includes(userId)
       )
     )
     return delay(myTasks)
@@ -1014,7 +1092,17 @@ export const tasksApi = MOCK ? {
   submitForReview: (id: number, achievement_summary?: string, key_outcomes?: string[], challenges_faced?: string, revision_response?: string, taggedReviewers?: number[]) => client.patch<ApiResponse<Task>>(`/index.php?endpoint=tasks&id=${id}&action=submit`, { achievement_summary, key_outcomes, challenges_faced, revision_response, tagged_reviewers: taggedReviewers }).then(r => r.data),
   approve: (id: number) => client.patch<ApiResponse<Task>>(`/index.php?endpoint=tasks&id=${id}&action=approve`).then(r => r.data),
   reject: (id: number, reason: string) => client.patch<ApiResponse<Task>>(`/index.php?endpoint=tasks&id=${id}&action=reject`, { reason }).then(r => r.data),
-  resubmit: (id: number, achievement_summary?: string, key_outcomes?: string[], challenges_faced?: string, revision_response?: string) => client.patch<ApiResponse<Task>>(`/index.php?endpoint=tasks&id=${id}&action=resubmit`, { achievement_summary, key_outcomes, challenges_faced, revision_response }).then(r => r.data),
+  tagColleagues: (id: number, userIds: number[], userNames: string[]) => client.patch<ApiResponse<Task>>(`/index.php?endpoint=tasks&id=${id}&action=tag`, { user_ids: userIds, user_names: userNames }).then(r => r.data),
+  resubmit: (id: number, achievement_summary?: string, key_outcomes?: string[], challenges_faced?: string, revision_response?: string, taggedReviewers?: number[]) => client.patch<ApiResponse<Task>>(`/index.php?endpoint=tasks&id=${id}&action=resubmit`, { achievement_summary, key_outcomes, challenges_faced, revision_response, tagged_reviewers: taggedReviewers }).then(r => r.data),
+  uploadAttachment: (taskId: number, file: File) => {
+    const form = new FormData()
+    form.append('file', file)
+    return client.post<ApiResponse<Task>>(`/index.php?endpoint=tasks&id=${taskId}&action=upload`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }).then(r => r.data)
+  },
+  removeAttachment: (taskId: number, attachmentId: string) =>
+    client.delete<ApiResponse<Task>>(`/index.php?endpoint=tasks&id=${taskId}&action=attachment&attachment_id=${attachmentId}`).then(r => r.data),
   getMyTasks: (userId: number, branchId?: number) => client.get<ApiResponse<Task[]>>(`/index.php?endpoint=tasks&action=my&user_id=${userId}&branch_id=${branchId ?? ''}`).then(r => r.data),
   getManagerTasks: (managerId: number, branchId: number) => client.get<ApiResponse<Task[]>>(`/index.php?endpoint=tasks&action=manager&manager_id=${managerId}&branch_id=${branchId}`).then(r => r.data),
   delete: (id: number) => client.delete<ApiResponse<null>>(`/index.php?endpoint=tasks&id=${id}`).then(r => r.data),
